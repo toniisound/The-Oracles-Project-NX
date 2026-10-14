@@ -130,6 +130,7 @@ void ec_measure_camera(OraclesEnhancedCheck *c, const OraclesEnhancedObservation
     c->world_frames++;
     unsigned shown_w = 0, shown_h = 0;   /* the part of the band shown: all of it, but where the drawn-back view keeps the normal band */
     oracles_enhanced_view_shown(c->view, &shown_w, &shown_h);
+    if (shown_w < c->width) c->normal_band_frames++;
     const int32_t shown_left = camera_x + (int32_t)(c->width - shown_w) / 2;
     if (c->have_camera && c->have_mode && c->last_mode == ORACLES_ENHANCED_WORLD && ob->epoch == c->epochs) {
         const int32_t delta = camera_x - c->last_camera;

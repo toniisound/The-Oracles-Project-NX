@@ -65,7 +65,8 @@ int oracles_enhanced_world_from_room(uint8_t group, uint8_t room, int room_is_la
  * stops (0: the grid's); `map_left`, `map_top`: its first column and row, where it stops on the other side. */
 /* `isolated` values: a room of an overworld group off its map (by the profile's tileset map rules: a house, a
  * dungeon, an area past the map) is laid out as an interior there, alone or with the rooms it opens onto, in its
- * group's domain and band, as the Maku tree's screen (ORACLES_ENHANCED_ISOLATED) is. */
+ * group's domain and band, as the Maku tree's screen (ORACLES_ENHANCED_ISOLATED) is.  An interior of a game whose
+ * interiors are areas (the profile's interior area rules) takes that band too, in its own domain. */
 #define ORACLES_ENHANCED_ISOLATED 1
 #define ORACLES_ENHANCED_INDOORS 2
 /* `band_width`: the world band's width outdoors (groups 0 and 1), which is
@@ -73,7 +74,7 @@ int oracles_enhanced_world_from_room(uint8_t group, uint8_t room, int room_is_la
  * (256 the normal one, 480 the drawn-back view); 0 stands for 256.  Elsewhere
  * the viewport is 256, or the band where it is narrower, but for a large
  * room of the grid (groups 2 to 7), which a band wider than 256 shows whole
- * in the whole band. */
+ * in the whole band, and an interior laid out as ORACLES_ENHANCED_INDOORS. */
 /* Pure: in the drawn-back view (a band wider than 256), a room of Ages' open
  * sea takes the sea for its extent, as the map is outdoors, and the whole
  * band for its viewport: `sea` is the sea's rectangle on the grid (first

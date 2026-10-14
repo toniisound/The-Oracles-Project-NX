@@ -126,6 +126,13 @@ int main(void)
           && w.bounds_height == 128 && w.bounds_origin_y == 14 * 128);
     CHECK(oracles_enhanced_world_from_room(1, 0xa1, 0, 80, 40, 16, 8, 8, 0, 0, 0, ORACLES_ENHANCED_INDOORS, 0xa1, 0, &w) == 1);
     CHECK(w.domain == ORACLES_E11_ERA && w.alone);   /* Moonrise's group 1 dungeon: the past's domain, as its map's */
+    /* An interior laid out as a room off the map (a game whose interiors are areas, its caves): its own domain, the
+     * drawn-back band's width, the room centred in it; the normal band keeps the pinned 256. */
+    CHECK(oracles_enhanced_world_from_room(3, 0x38, 0, 80, 40, 16, 8, 8, 0, 0, 1u, ORACLES_ENHANCED_INDOORS, 0x38, 480, &w) == 1);
+    CHECK(w.domain == ORACLES_E11_INTERIOR && w.alone && w.viewport == 480 && w.bounds_width == 480 && w.bounds_origin_x == 8 * 160 - 160
+          && w.bounds_origin_y == 2 * 128 && w.bounds_height == 256);
+    CHECK(oracles_enhanced_world_from_room(3, 0x38, 0, 80, 40, 16, 8, 8, 0, 0, 1u, ORACLES_ENHANCED_INDOORS, 0x38, 256, &w) == 1 && w.viewport == 256);
+    CHECK(oracles_enhanced_world_from_room(3, 0x38, 0, 80, 40, 16, 8, 8, 0, 0, 1u, 0, 0x38, 480, &w) == 1 && w.viewport == 256);
     /* Link's coordinate byte, signed by the scroll: leftward past zero it wraps, rightward it runs past 240 (a large room). */
     CHECK(oracles_enhanced_signed_coordinate(247, 1, 3, 0, 1) == -9);    /* scrolling left, x */
     CHECK(oracles_enhanced_signed_coordinate(247, 1, 1, 0, 0) == 247);   /* scrolling right, x: past the edge of a large room */

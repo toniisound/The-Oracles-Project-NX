@@ -113,6 +113,8 @@ int main(void)
           && !oracles_compat_sea_level_rules(kinomi) && !oracles_compat_maku_isolation_rules(kinomi) && oracles_compat_own_routing_rules(kinomi));
     CHECK(!oracles_compat_own_routing_rules(ages) && !oracles_compat_own_routing_rules(seasons) && !oracles_compat_own_routing_rules(moonrise)
           && !oracles_compat_own_routing_rules(temple));
+    CHECK(kinomi && oracles_compat_interior_area_rules(kinomi) && !oracles_compat_interior_area_rules(ages) && !oracles_compat_interior_area_rules(seasons)
+          && !oracles_compat_interior_area_rules(moonrise) && !oracles_compat_interior_area_rules(temple));
     CHECK(kinomi && oracles_compat_guest_tables(kinomi) != &oracles_guest_tables_ages && oracles_compat_data_tables(kinomi) != &oracles_tables_ages);
     CHECK(kinomi && oracles_compat_room_flag_page(kinomi, 2) == 0 && oracles_compat_group_map_width(kinomi, 1) == 8 && oracles_compat_group_map_height(kinomi, 0) == 8);
     CHECK(kinomi && oracles_compat_continuous_transitions(kinomi) && oracles_compat_zoom_out(kinomi) && !oracles_compat_item_hotkeys(kinomi));

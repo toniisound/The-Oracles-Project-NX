@@ -390,6 +390,15 @@ int ev_entry_connected(const OraclesEnhancedView *v, const entry *e, OraclesGhos
     return 0;
 }
 
+/* An interior of a game whose interiors are areas of rooms joined by scrolls
+ * (its caves): laid out as a room off an overworld's map, the drawn-back band
+ * showing it whole with the rooms it opens onto, above and below too. */
+static int interior_area(const OraclesEnhancedView *v)
+{
+    const unsigned group = v->observer.ref_group & 7u;
+    return oracles_compat_interior_area_rules(oracles_guest_profile(v->guest)) && (group == 2u || group == 3u) && !v->observer.ref_large;
+}
+
 /* The reference room's collisions, in normal play, and the interior's open
  * edges for the camera: the directions whose cached room is connected. */
 void ev_update_reference_edges(OraclesEnhancedView *v)
@@ -421,7 +430,7 @@ void ev_update_reference_edges(OraclesEnhancedView *v)
     v->have_last_ref = 1;
     v->last_ref_group = v->observer.ref_group; v->last_ref_room = v->observer.ref_room; v->last_ref_epoch = ob->epoch;
     v->observer.isolated = ev_isolated_room(v) ? ORACLES_ENHANCED_ISOLATED
-                         : ev_on_grid(v) && ev_off_map(v, v->observer.ref_group, v->observer.ref_room) ? ORACLES_ENHANCED_INDOORS : 0;
+                         : ev_on_grid(v) && (ev_off_map(v, v->observer.ref_group, v->observer.ref_room) || interior_area(v)) ? ORACLES_ENHANCED_INDOORS : 0;
     /* Under the tileset map rules the camera stops at the reference group's own map (Subrosia's 11 x 8). */
     if (map_rules(v)) {
         v->observer.map_width = ev_map_width(v, v->observer.ref_group);

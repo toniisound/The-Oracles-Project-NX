@@ -85,6 +85,7 @@ struct OraclesEnhancedCheck {
     unsigned fallback_runs;           /* runs of consecutive framed frames */
     unsigned enlarged_frames, enlarged_runs;   /* framed frames the large menus show at their own scale (the view's crop), and their runs */
     int last_enlarged;
+    unsigned normal_band_frames;      /* world frames of the drawn-back view showing the normal band, centred in its own (an interior) */
     OraclesEnhancedMode last_mode;
     int have_mode;
     int have_last_observation;

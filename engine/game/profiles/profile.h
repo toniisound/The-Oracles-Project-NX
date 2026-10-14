@@ -45,6 +45,8 @@ typedef struct OraclesCompatProfile {
                                         from the start, as Seasons', with no routing key (Gifts of Kinomi) */
     int tileset_map_rules;           /* a room of groups 0 and 1 is on its map by its tileset (outdoors) and its place within the map;
                                         the others (houses, a dungeon, areas past the map) are interiors */
+    int interior_area_rules;         /* the interiors (groups 2 and 3) are areas of small rooms joined by scrolls, its caves among them:
+                                        laid out as a room off an overworld's map, in the drawn-back view's whole band (Gifts of Kinomi) */
     /* A language's banks (docs/ROM_DATA_FORMATS.md, section 16): from this one, its index at its start, to bank $7f, banks
      * the image leaves empty (the extension of an original, which a language composes to 2 MiB). */
     uint8_t language_bank;
@@ -82,6 +84,7 @@ int oracles_compat_sea_level_rules(const OraclesCompatProfile *profile);
 int oracles_compat_forest_scrambler_rules(const OraclesCompatProfile *profile);
 int oracles_compat_lost_woods_rules(const OraclesCompatProfile *profile);
 int oracles_compat_own_routing_rules(const OraclesCompatProfile *profile);
+int oracles_compat_interior_area_rules(const OraclesCompatProfile *profile);
 /* The first of a language's banks in the image (ORACLES_IMAGE_LANGUAGE_BANK for an original), 0 for none. */
 unsigned oracles_compat_language_bank(const OraclesCompatProfile *profile);
 

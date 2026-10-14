@@ -60,7 +60,8 @@ static OraclesE11Domain domain_of_group(uint8_t group)
 
 /* Outdoors the reducer frames the whole band, 480 wide in the drawn-back
  * view; elsewhere its pinned 256, the drawn-back view keeping the normal
- * band there, centred in its own (but at sea, oracles_enhanced_world_extend_to_sea). */
+ * band there, centred in its own (but at sea, oracles_enhanced_world_extend_to_sea,
+ * and in an interior laid out as a room off the map, ORACLES_ENHANCED_INDOORS). */
 static int wide_domain(OraclesE11Domain domain) { return domain == ORACLES_E11_EXTERIOR || domain == ORACLES_E11_ERA; }
 static int drawn_back(const OraclesEnhancedWorld *world) { return world->viewport > NARROW_BAND_W; }
 /* The viewport elsewhere than outdoors: the pinned 256, or the band's width when the band is narrower (near, 4:3). */
@@ -76,7 +77,7 @@ int oracles_enhanced_world_from_room(uint8_t group, uint8_t room, int room_is_la
      * a scroll between a room of the map and one off it, or the view learning of it a frame late, would lower the
      * epoch and leave the camera behind (the reducer ignores a lower one). */
     out->domain = domain_of_group(group);
-    const int viewport = wide_domain(out->domain) && band_width ? (int)band_width : narrow_viewport(band_width);
+    const int viewport = (wide_domain(out->domain) || isolated == ORACLES_ENHANCED_INDOORS) && band_width ? (int)band_width : narrow_viewport(band_width);
     out->viewport = viewport;
     (void)room;
     const unsigned col = cell & 0x0fu;
@@ -461,14 +462,20 @@ static void reducer_observation(const OraclesEnhancedCamera *c, uint32_t frame, 
          * in the drawn-back view's 254, the extent is widened to it, and a
          * scroll that opens an edge widens it further without leaving the
          * band where it stood, so that the reducer tracks the room open or
-         * closed and the band does not jump.  In the normal band a room fills
-         * the band's height already. */
+         * closed and the band does not jump.  A band taller than two rooms
+         * (344 lines, the far view in 4:3) would leave the room a scroll
+         * enters a range of places that does not meet the one of the room it
+         * leaves, and the band would jump at its end: the rooms the room opens
+         * onto keep their own centred bands in the extent too.  In the normal
+         * band a room fills the band's height already. */
         int32_t top = world->bounds_origin_y, height = world->bounds_height;
         const int32_t band = band_px(c, world);
         if (world->alone && band > SMALL_ROOM_H) {
-            const int32_t own_top = world->origin_y - (band - SMALL_ROOM_H) / 2, bottom = top + height;
-            if (own_top < top) top = own_top;
-            height = (bottom > own_top + band ? bottom : own_top + band) - top;
+            const int32_t margin = (band - SMALL_ROOM_H) / 2, bottom = top + height;
+            int32_t first = world->origin_y - margin, last = first + band;
+            if (band > 2 * SMALL_ROOM_H) { first = top - margin; last = bottom - SMALL_ROOM_H - margin + band; }
+            if (first < top) top = first;
+            height = (bottom > last ? bottom : last) - top;
         }
         obs->bounds_origin_x = (top - vertical_margin(c, world)) * ORACLES_E11_F256;
         obs->bounds_origin_y = world->bounds_origin_x * ORACLES_E11_F256;

@@ -55,12 +55,14 @@ static const OraclesCompatProfile profiles[] = {
      * none of Seasons' rules for the season the band holds.  Its routines of mapTransitionGroupTable are its own (its
      * Lost Woods, sword and shrine rooms, forest scrambler, sea, eye puzzle): each room of the table is taken as routing
      * elsewhere from the start, never a start for the room beyond it, and its answers are asked again after every
-     * transition.  Features qualified only once its routes held them. */
+     * transition.  Its caves are interiors of small rooms joined by scrolls (3:38 below 3:28, entered from 0:37): the
+     * drawn-back view shows them as the rooms off its map, in its whole band.  Features qualified only once its routes
+     * held them. */
     { .id = "kinomi-1.1.2", .name = "Gifts of Kinomi 1.1.2", .revision = ORACLES_ROM_REVISION_KINOMI_1_1_2, .family = ORACLES_GAME_AGES,
       .continuous_transitions = 1, .zoom_out = 1, .continuous_diagonal = 1,
       .guest_tables = &oracles_guest_tables_kinomi, .data_tables = &oracles_tables_kinomi, .room_flag_pages = kinomi_room_flag_pages,
       .map_width = 8, .map_height = 8,
-      .open_water_rules = 1, .maku_tree_rules = 1, .tileset_map_rules = 1, .own_routing_rules = 1,
+      .open_water_rules = 1, .maku_tree_rules = 1, .tileset_map_rules = 1, .own_routing_rules = 1, .interior_area_rules = 1,
       .language_bank = 0x72 }   /* banks $70 and $71 hold its data; $72 to $7f are empty */
 };
 
@@ -178,6 +180,10 @@ int oracles_compat_lost_woods_rules(const OraclesCompatProfile *profile)
 int oracles_compat_own_routing_rules(const OraclesCompatProfile *profile)
 {
     return profile ? profile->own_routing_rules : 0;
+}
+int oracles_compat_interior_area_rules(const OraclesCompatProfile *profile)
+{
+    return profile ? profile->interior_area_rules : 0;
 }
 unsigned oracles_compat_language_bank(const OraclesCompatProfile *profile)
 {
