@@ -162,3 +162,40 @@ OraclesEnhancedMode ev_choose_mode(OraclesEnhancedView *v, int tracking)
     v->framed_load = 0;
     return ORACLES_ENHANCED_WORLD;
 }
+
+/* A room's load under the HUD band the world frames draw (the status bar, its gutters as hud= paints them, the
+ * hotbar), so that the bar neither moves nor changes at a door: below it the game area alone, where the world shows
+ * it, the rest black as the world band leaves what no source covers.  Its place: the last world frame's while the
+ * image still shows the room left; after the load's blank, the camera's for a large room, which it frames from the
+ * room itself, else centred, where the camera frames an interior of one room (its observation of Link held outside
+ * the room until the walk in ends, the camera says nothing of the room entered before).  The blank itself (the LCD
+ * off, a full fade: one colour over the whole image) stays framed whole, as the game shows it.  Any other framed
+ * frame lets the room left go. */
+int ev_load_band(OraclesEnhancedView *v, OraclesEnhancedCompose *in, int tracking, int32_t camera_x, int32_t camera_y)
+{
+    const OraclesEnhancedObservation *ob = &v->observation;
+    v->load_band = 0;
+    const int world = in->mode == ORACLES_ENHANCED_WORLD;
+    if (world || (v->framed_load && !v->load_area_held && tracking && ob->large_grid)) {
+        v->load_area_left = ob->window_left - camera_x;
+        v->load_area_top = (int32_t)ORACLES_ENHANCED_HUD_HEIGHT + ob->window_top - camera_y;
+        v->load_area_held = world;
+        if (world) return 0;
+    } else if (!v->framed_load) { v->load_area_held = 0; return 0; }
+    else if (!v->load_area_held) {
+        v->load_area_left = (int32_t)oracles_enhanced_hud_x(v->size);
+        v->load_area_top = (int32_t)((v->size.height - ORACLES_PPU_HEIGHT) / 2u + ORACLES_ENHANCED_HUD_HEIGHT);
+    }
+    const uint32_t *image = ev_scroll_window(v);
+    size_t i = 1;
+    while (i < (size_t)ORACLES_ENHANCED_CORE_WIDTH * ORACLES_PPU_HEIGHT && image[i] == image[0]) i++;
+    if (i == (size_t)ORACLES_ENHANCED_CORE_WIDTH * ORACLES_PPU_HEIGHT) { v->load_area_held = 0; v->load_blank_frames++; return 0; }
+    in->mode = ORACLES_ENHANCED_WORLD;
+    in->world_left = 0;
+    in->world_top = 0;
+    in->window_world_left = v->load_area_left;
+    in->window_world_top = v->load_area_top - (int32_t)ORACLES_ENHANCED_HUD_HEIGHT;
+    v->load_band = 1;
+    v->load_band_frames++;
+    return 1;
+}

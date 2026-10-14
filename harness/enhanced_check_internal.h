@@ -86,6 +86,13 @@ struct OraclesEnhancedCheck {
     unsigned enlarged_frames, enlarged_runs;   /* framed frames the large menus show at their own scale (the view's crop), and their runs */
     int last_enlarged;
     unsigned normal_band_frames;      /* world frames of the drawn-back view showing the normal band, centred in its own (an interior) */
+    /* A room's load drawn under the world's HUD band: the last frame's kind (0 another, 1 a world frame, 2 a load so
+     * drawn), its band's sixteen lines hashed, its game area's place; the steps between the two kinds, those where the
+     * band changed, and those where the game area moved. */
+    int load_last_kind;
+    uint64_t load_last_band;
+    int32_t load_last_left, load_last_top;
+    unsigned load_boundaries, load_band_changes, load_area_moves;
     OraclesEnhancedMode last_mode;
     int have_mode;
     int have_last_observation;

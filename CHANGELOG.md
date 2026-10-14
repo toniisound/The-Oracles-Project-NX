@@ -28,6 +28,7 @@ Most of this release answers what players asked for after 1.1.0, many of them on
 
 ### Fixed
 
+- At each door, while the next room loads, the status bar keeps its look from play (full width, with the item hotkeys) instead of switching for a moment to its original, narrow form.
 - After the season changes in Seasons (crossing into an area of another season, or with the Rod of Seasons), and after a game loads, a piece of the season's or era's banner no longer stays drawn over the scenery for a frame.
 - Enemies of the room Link leaves no longer vanish at the edge of the game's own screen during the scroll: they stay where they were and fade out once it ends, as the ones of the room entered fade in.
 - Walking diagonally or on stairs in Enhanced, Link no longer shakes a pixel back and forth against the screen. The fix in 1.1.0 was not enough; the camera now follows Link where the picture draws him.

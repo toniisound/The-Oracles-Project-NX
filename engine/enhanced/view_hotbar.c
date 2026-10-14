@@ -145,16 +145,19 @@ static int bar_pixel(OraclesEnhancedView *v, unsigned x, unsigned y, uint16_t *r
 
 static uint32_t core_colour(void *opaque, uint16_t rgb555) { return oracles_core_convert_rgb555(((OraclesEnhancedView *)opaque)->core, rgb555); }
 
-/* The gutters beside the status bar with the bar drawn full width: in the world band alone, the framed core's bar
- * standing in the middle of the drawn-back surface, or being no bar at all (a menu, a cutscene). */
+/* The gutters beside the status bar with the bar drawn full width: in the world band alone, and a room's load drawn
+ * under it, the framed core's bar standing in the middle of the drawn-back surface, or being no bar at all (a menu, a
+ * cutscene).  The counts are the world frames'. */
 const uint32_t *ev_hud_fill(OraclesEnhancedView *v, OraclesEnhancedMode mode)
 {
     OraclesEnhancedBar bar;
     const uint32_t *core = oracles_core_pixels(v->core);   /* the bar's lines, which a scroll's redrawn window copies as they are */
     if (!v->hud_full || mode != ORACLES_ENHANCED_WORLD || !core || !status_bar(v, &bar)) return NULL;
     const unsigned filled = oracles_enhanced_hud_fill(&bar, core_colour, v, core, v->hud_fill);
-    if (filled) v->hud_frames++;
-    v->hud_lines_kept += 2u * ORACLES_ENHANCED_HUD_HEIGHT - filled;
+    if (!v->load_band) {
+        if (filled) v->hud_frames++;
+        v->hud_lines_kept += 2u * ORACLES_ENHANCED_HUD_HEIGHT - filled;
+    }
     return filled ? v->hud_fill : NULL;
 }
 
@@ -165,6 +168,19 @@ void oracles_enhanced_view_hud_counts(const OraclesEnhancedView *v, unsigned *fr
 {
     if (frames) *frames = v->hud_frames;
     if (lines_kept) *lines_kept = v->hud_lines_kept;
+}
+
+int oracles_enhanced_view_load_band(const OraclesEnhancedView *v, int32_t *area_left, int32_t *area_top)
+{
+    if (area_left) *area_left = v->load_area_left;
+    if (area_top) *area_top = v->load_area_top;
+    return v->load_band;
+}
+
+void oracles_enhanced_view_load_counts(const OraclesEnhancedView *v, unsigned *band_frames, unsigned *blank_frames)
+{
+    if (band_frames) *band_frames = v->load_band_frames;
+    if (blank_frames) *blank_frames = v->load_blank_frames;
 }
 
 /* The icon kept for the item on `button` against the core's own image, both ways, over the whole box of the icon where
@@ -263,6 +279,15 @@ static uint64_t hash_outside_slots(const OraclesEnhancedView *v)
                               (size_t)(v->size.height - top - ORACLES_ENHANCED_HUD_HEIGHT) * width * sizeof *surface, h);
 }
 
+/* The status bar's sixteen lines one colour in the core's image. */
+static int bar_blank(const OraclesEnhancedView *v)
+{
+    const uint32_t *core = oracles_core_pixels(v->core);
+    if (!core) return 1;
+    for (unsigned i = 1; i < ORACLES_ENHANCED_HUD_HEIGHT * ORACLES_ENHANCED_CORE_WIDTH; i++) if (core[i] != core[0]) return 0;
+    return 1;
+}
+
 void ev_draw_hotbar(OraclesEnhancedView *v)
 {
     if (!v->hotbar_shown || !oracles_hotbar_fits(v->size.width, ORACLES_ENHANCED_CORE_WIDTH)) return;
@@ -273,8 +298,17 @@ void ev_draw_hotbar(OraclesEnhancedView *v)
      * belongs to on screen as the game draws it.  Not over the title, the file select, a cutscene, a warp, a menu or a
      * text, where no item can be played, nor during a fade, where four slots on a white flash say nothing (as
      * the opening cutscene's white flashes show).  A scroll between two rooms keeps it: the
-     * request only waits for the scroll to end. */
-    if (oracles_guest_inventory_refusal(&s) != ORACLES_INVENTORY_APPLIED || v->fade_effective != 0) { v->hotbar_icons_shown = 0; return; }
+     * request only waits for the scroll to end.  So does a room's load (a door, stairs: the warp, the game loading
+     * the room under the same cutscene without scrolling), which refuses a request: the band stays as in play, in the
+     * load drawn under it and in the world frames that end it, but not over the blank between the rooms, the bar
+     * one colour with the LCD off. */
+    const OraclesGuestInventoryVerdict refusal = oracles_guest_inventory_refusal(&s);
+    const int room_load = refusal == ORACLES_INVENTORY_REFUSED_NOT_IN_PLAY
+        && (v->load_band || (s.game_state == 2u && s.cutscene_index == s.cutscene_loading_room)) && !bar_blank(v);
+    if ((refusal != ORACLES_INVENTORY_APPLIED && !room_load) || v->fade_effective != 0) {
+        v->hotbar_icons_shown = 0;
+        return;
+    }
     const OraclesGuestTables *t = oracles_guest_tables(v->guest);
     OraclesHotbarSlotView views[ORACLES_HOTBAR_SLOTS];
     char labels[ORACLES_HOTBAR_SLOTS][5];

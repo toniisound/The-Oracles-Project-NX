@@ -419,6 +419,11 @@ struct OraclesEnhancedView {
     uint8_t ref_maku_group, ref_maku_room;
     int have_view;
     int framed_load;                 /* the last composition framed a room's load: not enlarged with the large menus */
+    /* A room's load under the world's HUD band (view_mode.c): whether the last composition drew one, the place of the
+     * game area in the surface (the last world frame's, or the load's), whether a place is held, and the frames counted. */
+    int load_band, load_area_held;
+    int32_t load_area_left, load_area_top;
+    unsigned load_band_frames, load_blank_frames;
     int have_last_ref, have_came_from;
     uint8_t last_ref_group, last_ref_room, came_from_room;
     uint64_t last_ref_epoch;
@@ -684,6 +689,9 @@ void ev_hotbar_event(OraclesEnhancedView *v, const OraclesGuestEvent *event);
 const uint32_t *ev_hud_fill(OraclesEnhancedView *v, OraclesEnhancedMode mode);
 /* view_mode.c: the frame's mode, and the ripple the band follows (v->have_wave, v->line_shift). */
 OraclesEnhancedMode ev_choose_mode(OraclesEnhancedView *v, int tracking);
+/* A room's load composed under the world's HUD band, the game area alone at the place the camera gives it or the world
+ * last showed it: sets the compose's descriptor for it and returns 1; 0 for another frame, which it leaves as it is. */
+int ev_load_band(OraclesEnhancedView *v, OraclesEnhancedCompose *in, int tracking, int32_t camera_x, int32_t camera_y);
 /* view_black.c: the black of the composed frame counted, once a frame. */
 void ev_measure_black(OraclesEnhancedView *v, OraclesEnhancedMode mode, int32_t camera_x, int32_t camera_y);
 /* Whether the part of the band shown, the band's top-left corner at (band_left,

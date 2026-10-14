@@ -111,13 +111,20 @@ void oracles_enhanced_view_hotbar_verify(OraclesEnhancedView *view, int enabled)
 void oracles_enhanced_view_hotbar_proof(const OraclesEnhancedView *view, unsigned *checked, unsigned *wrong, unsigned *outside);
 /* The status bar drawn full width (`hud=full`): the gutters beside it, on its sixteen lines, take the bar's own
  * background, its palette's colour at its edge as the game shows it (fades, its own changes and the colour correction
- * follow), in the world band; the framed core keeps the border.  Off by default (`hud=original`, the border).  It may
- * change between two compositions: it is presentation alone.  The counts: world frames that filled a line at least, and
- * the gutters' lines that kept the border in every world frame with the bar, filled or not, the left's and the right's
- * sixteen each (32 a frame at most), the core's image showing there something else than the bar. */
+ * follow), in the world band and a room's load drawn under it; the framed core keeps the border.  Off by default
+ * (`hud=original`, the border).  It may change between two compositions: it is presentation alone.  The counts: world
+ * frames that filled a line at least, and the gutters' lines that kept the border in every world frame with the bar,
+ * filled or not, the left's and the right's sixteen each (32 a frame at most), the core's image showing there something
+ * else than the bar. */
 void oracles_enhanced_view_set_hud(OraclesEnhancedView *view, int full);
 int oracles_enhanced_view_hud(const OraclesEnhancedView *view);
 void oracles_enhanced_view_hud_counts(const OraclesEnhancedView *view, unsigned *frames, unsigned *lines_kept);
+/* A room's load (a door, stairs) drawn under the HUD band the world frames draw, the game area alone where the world
+ * shows it: whether the last composition drew one, and the surface's place of the game area's top-left pixel there or in
+ * the last world frame.  The counts: the load's frames drawn so, and those left framed whole for showing one colour
+ * (the LCD off, a full fade). */
+int oracles_enhanced_view_load_band(const OraclesEnhancedView *view, int32_t *area_left, int32_t *area_top);
+void oracles_enhanced_view_load_counts(const OraclesEnhancedView *view, unsigned *band_frames, unsigned *blank_frames);
 /* Frames that drew the fade of objects appearing on entry, and objects that started one. */
 void oracles_enhanced_view_fade_counts(const OraclesEnhancedView *view, unsigned *frames, unsigned *objects);
 /* Frames that drew the fade of objects an image of a room left showed, once replaced, and objects that started one. */

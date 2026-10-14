@@ -82,6 +82,12 @@ static void summary_of_what_was_shown(OraclesEnhancedCheck *c, FILE *out)
         oracles_enhanced_view_hud_counts(c->view, &frames, &kept);
         fprintf(out, "enhanced.hud_full_frames=%u\nenhanced.hud_lines_kept=%u\n", frames, kept);
     }
+    {   /* a room's load drawn under the world's HUD band */
+        unsigned band = 0, blank = 0;
+        oracles_enhanced_view_load_counts(c->view, &band, &blank);
+        fprintf(out, "enhanced.load_band_frames=%u\nenhanced.load_blank_frames=%u\nenhanced.load_band_steps=%u\nenhanced.load_band_changes=%u\nenhanced.load_area_moves=%u\n",
+                band, blank, c->load_boundaries, c->load_band_changes, c->load_area_moves);
+    }
     fprintf(out, "enhanced.plain_shown_frames=%u\n", oracles_enhanced_view_plain_shown_frames(c->view));
     {
         unsigned drawn = 0, unmatched = 0;

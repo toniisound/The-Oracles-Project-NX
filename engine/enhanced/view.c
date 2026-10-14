@@ -475,8 +475,10 @@ const uint32_t *oracles_enhanced_view_compose(OraclesEnhancedView *v, OraclesEnh
             in.counted_height = LARGE_ROOM_H * (ob->in_scroll && !(d & 1u) ? 2u : 1u);
         }
     } else v->large_was_in_scroll = 0;
+    const int load_band = ev_load_band(v, &in, tracking, camera_x, camera_y);
     in.hud_fill = ev_hud_fill(v, in.mode);
     v->uncovered = oracles_enhanced_compose(ev_scroll_window(v), &in, v->surface);
+    if (load_band) { in.mode = ORACLES_ENHANCED_FRAMED; v->uncovered = 0; }
     ev_find_area_blurb(v);
     if (in.mode == ORACLES_ENHANCED_WORLD) {
         ev_fade_vanishing(v, camera_x, camera_y);
@@ -491,7 +493,7 @@ const uint32_t *oracles_enhanced_view_compose(OraclesEnhancedView *v, OraclesEnh
     /* In the HUD band's gutters, whatever the mode: they exist in the framed
      * surface too, beside the status bar wherever the image stands (centred
      * in the drawn-back surface). */
-    v->hud_top = in.mode == ORACLES_ENHANCED_FRAMED ? (v->size.height - ORACLES_PPU_HEIGHT) / 2u : 0u;
+    v->hud_top = in.mode == ORACLES_ENHANCED_FRAMED && !load_band ? (v->size.height - ORACLES_PPU_HEIGHT) / 2u : 0u;
     ev_draw_hotbar(v);
     ev_measure_black(v, in.mode, camera_x, camera_y);
     v->have_view = in.mode == ORACLES_ENHANCED_WORLD;
@@ -765,10 +767,10 @@ int oracles_enhanced_view_load_state(OraclesEnhancedView *v, const uint8_t *data
     /* What the view remembered of the frames before the load is about
      * another place: the room a scroll came from (an unrelated room would be
      * drawn as connected), the captures, the reference room's edges and
-     * object, the pre-runs of a load, the sprite bookkeeping. */
+     * object, the place and the pre-runs of a load, the sprite bookkeeping. */
     v->have_last_ref = 0; v->have_came_from = 0; v->have_last_scroll_dir = 0;
     v->source_valid = 0; v->large_capture_valid = 0; v->large_prev_valid = 0; v->large_was_in_scroll = 0;
-    v->have_ref_collisions = 0; v->ref_maku = 0;
+    v->have_ref_collisions = 0; v->ref_maku = 0; v->load_area_held = 0;
     v->blind_mask = 0; v->blind_epoch = 0;
     v->have_live_tiles_prev = 0; v->have_wave = 0; v->shake_history = 0; v->blurb_shown = 0; v->blurb_mask = 0;
     memset(v->blurb_drawings, 0, sizeof v->blurb_drawings);   /* drawings of another moment */

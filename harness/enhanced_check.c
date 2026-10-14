@@ -142,6 +142,20 @@ void oracles_enhanced_check_frame_end(OraclesEnhancedCheck *c, uint32_t frame)
         if (enlarged) { c->enlarged_frames++; if (!c->last_enlarged) c->enlarged_runs++; }
         c->last_enlarged = enlarged;
     }
+    {   /* a room's load under the world's HUD band: from a world frame to a load and back, the band and the game area stay */
+        int32_t left = 0, top = 0;
+        const int kind = oracles_enhanced_view_load_band(c->view, &left, &top) ? 2 : mode == ORACLES_ENHANCED_WORLD ? 1 : 0;
+        const uint64_t band = oracles_guest_hash((const uint8_t *)surface, (size_t)c->width * ORACLES_ENHANCED_HUD_HEIGHT * sizeof *surface, ORACLES_HASH_SEED);
+        if (kind && c->load_last_kind && kind != c->load_last_kind) {
+            c->load_boundaries++;
+            if (band != c->load_last_band) c->load_band_changes++;
+            if (left != c->load_last_left || top != c->load_last_top) c->load_area_moves++;
+        }
+        c->load_last_kind = kind;
+        c->load_last_band = band;
+        c->load_last_left = left;
+        c->load_last_top = top;
+    }
 
     int shown[4];
     uint8_t room[4];
