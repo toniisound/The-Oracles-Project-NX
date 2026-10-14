@@ -51,6 +51,7 @@ static int reload_load_state(OraclesEnhancedCheck *c, const int shown[4], const 
     if (oracles_enhanced_view_load_state(c->view, c->saved_view, c->saved_view_size) != 0) return 0;
     if (c->link_sprites) oracles_sprites_forget(c->link_sprites);
     c->have_drawn_link = 0;
+    c->blurb_drawn_count = 0;   /* the frames drawn before are about another moment */
     return 1;
 }
 

@@ -117,6 +117,14 @@ struct OraclesEnhancedCheck {
     unsigned text_box_frames_at_origin;    /* frames the band showed the box where the game drew it, the view having to move it */
     char text_box_list[96];
     char curtain_list[96];
+    /* the area blurb, from the game's objects: the last frames the game drew, their wOam and the blurb's slot then
+     * (-1: none), and the world frames whose OAM showed its sprites, of those the ones the view left them in the
+     * window (ec_check_blurb) */
+    uint8_t blurb_drawn_oam[8][160];
+    int blurb_drawn_slot[8];
+    unsigned blurb_drawn_head, blurb_drawn_count;
+    unsigned blurb_frames, blurb_frames_in_window;
+    char blurb_list[96];
     unsigned terrains_equal, terrains_different, terrain_tiles_different;   /* the shown terrain against the layout committed after the entry */
     unsigned terrains_old;           /* entered while shown in its old state, the ghost running it again (its old season): not judged */
     int pending_old;
@@ -192,6 +200,8 @@ void ec_check_text_box(OraclesEnhancedCheck *c, const OraclesEnhancedObservation
 void ec_check_window_lines(OraclesEnhancedCheck *c, const OraclesEnhancedObservation *ob, const uint32_t *surface, int32_t camera_x, int32_t camera_y,
                            uint8_t box[ORACLES_ENHANCED_AREA_HEIGHT][ORACLES_ENHANCED_CORE_WIDTH], uint32_t frame);
 void ec_check_curtain(OraclesEnhancedCheck *c, const OraclesEnhancedObservation *ob, const uint32_t *surface, int32_t camera_x, int32_t camera_y, uint32_t frame);
+void ec_note_blurb_drawn(OraclesEnhancedCheck *c);
+void ec_check_blurb(OraclesEnhancedCheck *c, OraclesEnhancedMode mode, uint32_t frame);
 
 /* The rows and the figures written out (enhanced_check_report.c). */
 void ec_write_frame_row(OraclesEnhancedCheck *c, uint32_t frame, uint64_t hash, OraclesEnhancedMode mode, int32_t camera_x, int32_t camera_y,

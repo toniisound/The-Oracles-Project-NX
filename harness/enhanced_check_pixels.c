@@ -188,3 +188,56 @@ void ec_check_curtain(OraclesEnhancedCheck *c, const OraclesEnhancedObservation 
         if (used + 16 < sizeof c->curtain_list) snprintf(c->curtain_list + used, sizeof c->curtain_list - used, "%s%u:%u", used ? " " : "", frame, wrong);
     }
 }
+
+/* The area blurb (INTERAC_ERA_OR_SEASON_INFO), judged from the game's
+ * objects and not from the view: at each frame the game draws, its wOam and
+ * the blurb's slot then; the OAM on screen is one of those, found by its
+ * content (the frame after the game deletes the blurb, at the end of its
+ * slide out, it is the one drawn before, which still holds its last column).
+ * The entries the hooks tag as the object at that slot, on the screen, are
+ * the blurb's: while one of them is there, the view must take the blurb out
+ * of the window and draw it apart (oracles_enhanced_view_blurb_drawn). */
+#define ERA_OR_SEASON_INFO 0xe0u   /* constants/common/interactions.s */
+void ec_note_blurb_drawn(OraclesEnhancedCheck *c)
+{
+    const OraclesGuestTables *t = oracles_guest_tables(c->guest);
+    const uint8_t *woam = oracles_guest_ptr(c->guest, t->oam, 160u);
+    if (!woam) return;
+    const unsigned at = c->blurb_drawn_head;
+    c->blurb_drawn_head = (at + 1u) % 8u;
+    if (c->blurb_drawn_count < 8u) c->blurb_drawn_count++;
+    memcpy(c->blurb_drawn_oam[at], woam, 160u);
+    c->blurb_drawn_slot[at] = -1;
+    for (unsigned k = 0; k < 16u && c->blurb_drawn_slot[at] < 0; k++) {
+        const uint8_t *o = oracles_guest_object(c->guest, k, 1);
+        if (o && o[ORACLES_OBJ_ENABLED] && o[ORACLES_OBJ_ID] == ERA_OR_SEASON_INFO) c->blurb_drawn_slot[at] = (int)k;
+    }
+}
+
+void ec_check_blurb(OraclesEnhancedCheck *c, OraclesEnhancedMode mode, uint32_t frame)
+{
+    const uint8_t *oam = oracles_guest_oam(c->guest);
+    if (mode != ORACLES_ENHANCED_WORLD || !c->link_sprites || !oam) return;
+    int slot = -1;
+    for (unsigned k = 0; k < c->blurb_drawn_count; k++) {
+        const unsigned at = (c->blurb_drawn_head + 7u - k) % 8u;
+        if (memcmp(c->blurb_drawn_oam[at], oam, 160u) == 0) { slot = c->blurb_drawn_slot[at]; break; }
+    }
+    if (slot < 0) return;
+    OraclesSpriteTag tags[ORACLES_SPRITE_TAGS];
+    const unsigned count = oracles_sprites_tags_for_oam(c->link_sprites, oam, tags, ORACLES_SPRITE_TAGS);
+    unsigned on_screen = 0;
+    for (unsigned i = 0; i < count; i++) {
+        if (tags[i].kind != 1u || tags[i].slot != (unsigned)slot || tags[i].terrain_effect) continue;
+        for (unsigned n = 0; n < tags[i].count && tags[i].first + n < 40u; n++) {
+            const uint8_t *e = oam + (tags[i].first + n) * 4u;
+            if (e[0] > 0u && e[0] < 160u && e[1] > 0u && e[1] < 168u) on_screen++;
+        }
+    }
+    if (!on_screen) return;
+    c->blurb_frames++;
+    if (oracles_enhanced_view_blurb_drawn(c->view)) return;
+    c->blurb_frames_in_window++;
+    const size_t used = strlen(c->blurb_list);
+    if (used + 12 < sizeof c->blurb_list) snprintf(c->blurb_list + used, sizeof c->blurb_list - used, "%s%u", used ? " " : "", frame);
+}

@@ -199,6 +199,17 @@ typedef struct large_object_frame {
     int valid;
 } large_object_frame;
 
+/* A drawing of the game (the return of drawAllSprites, objects drawn): the
+ * wOam it wrote, and the area blurb among its objects, its place and state
+ * with the camera the objects were placed by. */
+#define BLURB_DRAWINGS 4u           /* drawings kept: the OAM on screen lags wOam by a frame, more through a room's load */
+typedef struct blurb_drawing {
+    uint8_t oam[160];
+    int valid, there;
+    uint8_t x, y, state;
+    int camera_x, camera_y;
+} blurb_drawing;
+
 #define HOTBAR_ICON_VARIANTS 8u   /* no variant, then the seeds 0 to 4 or the songs 1 to 3 */
 
 struct OraclesEnhancedView {
@@ -451,8 +462,8 @@ struct OraclesEnhancedView {
     uint32_t large_prev[LARGE_ROOM_W * LARGE_ROOM_H];
     int large_prev_valid;
     uint32_t popup_frame[ORACLES_PPU_WIDTH * ORACLES_PPU_HEIGHT];   /* the LCD frame rendered again by the software PPU: without the blurb's sprites, those that appear, or a text box */
-    int blurb_seen;                  /* the blurb was there at the last composition, at x blurb_x */
-    uint8_t blurb_x;
+    blurb_drawing blurb_drawings[BLURB_DRAWINGS];
+    unsigned blurb_drawings_head;
     uint64_t blurb_mask;             /* this frame's OAM entries that are the blurb's (bit per entry) */
     /* The objects of a large room beyond the game's window: at each drawing
      * of the game in a large room, every object's
@@ -475,7 +486,9 @@ struct OraclesEnhancedView {
     unsigned large_object_sprites_drawn;   /* sprites drawn beyond the window, over the run */
     unsigned large_object_frames_unmatched;  /* compositions in a large room whose OAM on screen matched no drawing kept */
     int blurb_built_x;               /* its x when the OAM on screen was built */
-    const uint8_t *blurb;            /* the blurb object this frame, or NULL */
+    uint8_t blurb_built_y;           /* and its y */
+    int blurb_built_camera_x;        /* the camera that OAM placed it by */
+    int blurb_shown;                 /* the OAM on screen holds the blurb: built while it was there */
     int large_was_in_scroll;         /* the last composition, a world one, was inside a large room's scroll */
     uint64_t large_scroll_epoch;     /* its epoch */
     int32_t large_prev_left, large_prev_top;
@@ -657,6 +670,7 @@ void ev_render_large_room(OraclesEnhancedView *v);
 void ev_overlay_edge_sprites(OraclesEnhancedView *v, int32_t camera_x, int32_t camera_y);
 void ev_large_objects_event(OraclesEnhancedView *v, const OraclesGuestEvent *event);
 void ev_overlay_large_objects(OraclesEnhancedView *v, int32_t camera_x, int32_t camera_y);
+void ev_blurb_event(OraclesEnhancedView *v, const OraclesGuestEvent *event);
 void ev_find_area_blurb(OraclesEnhancedView *v);
 void ev_overlay_area_blurb(OraclesEnhancedView *v, int32_t camera_x, int32_t camera_y);
 /* The columns of its map the game has not redrawn yet after a warp, over the whole band. */

@@ -5,6 +5,7 @@
 static void on_view_event(void *opaque, const OraclesGuestEvent *event)
 {
     ev_large_objects_event((OraclesEnhancedView *)opaque, event);
+    ev_blurb_event((OraclesEnhancedView *)opaque, event);
     ev_hotbar_event((OraclesEnhancedView *)opaque, event);
 }
 
@@ -592,7 +593,7 @@ void oracles_enhanced_view_large_object_counts(const OraclesEnhancedView *v, uns
 }
 void oracles_enhanced_view_animation_counts(const OraclesEnhancedView *v, unsigned *own, unsigned *other, unsigned *in_step_tiles) { if (own) *own = v->own_animation_copies; if (other) *other = v->other_animation_copies; if (in_step_tiles) *in_step_tiles = v->image_live_tiles; }
 void oracles_enhanced_view_stream_counts(const OraclesEnhancedView *v, unsigned *matched, unsigned *followed) { if (matched) *matched = v->streams_matched; if (followed) *followed = v->streams_followed; }
-int oracles_enhanced_view_blurb_drawn(const OraclesEnhancedView *v) { return v->blurb != NULL && v->blurb_mask != 0; }
+int oracles_enhanced_view_blurb_drawn(const OraclesEnhancedView *v) { return v->blurb_shown && v->blurb_mask != 0; }
 void oracles_enhanced_view_blind_runs(const OraclesEnhancedView *v, unsigned *filed, unsigned *dropped)
 {
     if (filed) *filed = v->blind_results;
@@ -769,7 +770,8 @@ int oracles_enhanced_view_load_state(OraclesEnhancedView *v, const uint8_t *data
     v->source_valid = 0; v->large_capture_valid = 0; v->large_prev_valid = 0; v->large_was_in_scroll = 0;
     v->have_ref_collisions = 0; v->ref_maku = 0;
     v->blind_mask = 0; v->blind_epoch = 0;
-    v->have_live_tiles_prev = 0; v->have_wave = 0; v->shake_history = 0; v->blurb_seen = 0; v->blurb = NULL; v->blurb_mask = 0;
+    v->have_live_tiles_prev = 0; v->have_wave = 0; v->shake_history = 0; v->blurb_shown = 0; v->blurb_mask = 0;
+    memset(v->blurb_drawings, 0, sizeof v->blurb_drawings);   /* drawings of another moment */
     ev_scroll_reset(v);   /* a scroll's animation (view_scroll.c): the one under way stays frozen, as the state loaded has it */
     v->strip_valid = 0;
     /* The objects' bookkeeping: the image of the room left,

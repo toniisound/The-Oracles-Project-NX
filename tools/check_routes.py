@@ -93,12 +93,14 @@ ALWAYS = {
                  "enhanced.live_diff_max=0", "enhanced.plain_shown_frames=0", "object_sprites.objects_wrong=0", "object_sprites.frames_wrong=0", "object_sprites.read_failures=0",
                  "sprites.shadows_unowned=0", "sprites.shadows_left=0", "sprites.shadows_grounded=0", "enhanced.text_box_frames_in_place=0",
                  "enhanced.curtain_window_frames_wrong=0", "enhanced.terrains_old=0", "enhanced.text_box_frames_at_origin=0",
+                 "enhanced.blurb_frames_in_window=0",   # the area blurb never left in the game's window, its last column included
                  "object_sprites.frames_checked>=1", "animation.frames_checked>=1", "enhanced.transitions_other_room=0",
                  # a scroll's animation, run by the view alone, lands on the game's step, image for image, at the frame its plan
                  # spread the loops over (a jump at the landing is a landing off that frame)
                  "enhanced.scroll_animation_landed_off=0", "enhanced.scroll_animation_gaps=0", "enhanced.scroll_animation_gap_max=0", "enhanced.scroll_animation_tiles_off=0"],
     "enhanced-threaded": ["result=ok", "enhanced.camera_jumps=0", "enhanced.window_misplaced=0", "enhanced.terrains_different=0",
                           "enhanced.live_diff_max=0", "enhanced.plain_shown_frames=0", "enhanced.text_box_frames_at_origin=0",
+                          "enhanced.blurb_frames_in_window=0",
                           "enhanced.transitions_other_room=0",   # never a room drawn that way other than the one entered
                           "enhanced.scroll_animation_landed_off=0", "enhanced.scroll_animation_gaps=0", "enhanced.scroll_animation_gap_max=0", "enhanced.scroll_animation_tiles_off=0"],
 }

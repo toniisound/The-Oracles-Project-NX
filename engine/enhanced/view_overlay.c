@@ -163,31 +163,68 @@ void ev_overlay_edge_sprites(OraclesEnhancedView *v, int32_t camera_x, int32_t c
  * software PPU without its sprites) and drawn at the top left of the band,
  * its slide in stretched so that it enters from the band's right edge
  * (deliberately, as the game slides it in from its own screen's right edge). */
+static const uint8_t *area_blurb(OraclesEnhancedView *v)
+{
+    for (unsigned k = 0; k < 16u; k++) {
+        const uint8_t *o = oracles_guest_object(v->guest, k, 1);
+        if (o && o[ORACLES_OBJ_ENABLED] && o[ORACLES_OBJ_ID] == INTERAC_ERA_OR_SEASON_INFO) return o;
+    }
+    return NULL;
+}
+
+void ev_blurb_event(OraclesEnhancedView *v, const OraclesGuestEvent *event)
+{
+    /* drawAllSprites returning at once leaves wOam as it was (ev_large_objects_event). */
+    if (event->type != ORACLES_EVENT_FRAME_DRAWN || !v->large_objects_drawn) return;
+    const OraclesGuestTables *t = oracles_guest_tables(v->guest);
+    const uint8_t *woam = oracles_guest_ptr(v->guest, t->oam, 160u);
+    if (!woam) return;
+    blurb_drawing *d = &v->blurb_drawings[v->blurb_drawings_head];
+    v->blurb_drawings_head = (v->blurb_drawings_head + 1u) % BLURB_DRAWINGS;
+    const uint8_t *blurb = area_blurb(v);
+    memcpy(d->oam, woam, sizeof d->oam);
+    d->valid = 1;
+    d->there = blurb != NULL;
+    if (blurb) { d->x = blurb[ORACLES_OBJ_XH]; d->y = blurb[ORACLES_OBJ_YH]; d->state = blurb[ORACLES_OBJ_STATE]; }
+    d->camera_x = (int16_t)oracles_guest_read16(v->guest, t->camera_x);
+    d->camera_y = (int16_t)oracles_guest_read16(v->guest, t->camera_y);
+}
+
 void ev_find_area_blurb(OraclesEnhancedView *v)
 {
     const OraclesEnhancedObservation *ob = &v->observation;
-    const uint8_t *blurb = NULL;
-    for (unsigned k = 0; k < 16u && !blurb; k++) {
-        const uint8_t *o = oracles_guest_object(v->guest, k, 1);
-        if (o && o[ORACLES_OBJ_ENABLED] && o[ORACLES_OBJ_ID] == INTERAC_ERA_OR_SEASON_INFO) blurb = o;
-    }
-    /* The OAM on screen was built by the frame before, where the slide stood
-     * (4 or 6 px further right): its x then is the one the last composition saw. */
-    int built_x = !blurb ? 0 : v->blurb_seen ? v->blurb_x : blurb[ORACLES_OBJ_XH];
-    /* The slide out (state 3) runs the byte past 0 to the left; the slide in starts at $b0, to the right. */
-    if (blurb && blurb[ORACLES_OBJ_STATE] == 3u && built_x >= 128) built_x -= 256;
-    v->blurb_seen = blurb != NULL;
-    if (blurb) v->blurb_x = blurb[ORACLES_OBJ_XH];
-    v->blurb = blurb;
-    v->blurb_built_x = built_x;
-    v->blurb_mask = 0;
     const uint8_t *oam = oracles_guest_oam(v->guest);
-    if (!blurb || !oam) return;
+    v->blurb_shown = 0;
+    v->blurb_mask = 0;
+    if (!oam) return;
+    /* The OAM on screen was written by one of the game's last drawings: the
+     * frame before's, where the slide stood 4 or 6 px further right, or an
+     * older one through a room's load, which draws none while the camera
+     * moves on.  The blurb as it stood then, placed by that drawing's camera;
+     * on the frame after the game deletes it, at the end of its slide out,
+     * that drawing still holds its last column.  Without one (a state just
+     * loaded), the blurb as it is, by the camera of the frame on screen. */
+    const blurb_drawing *drawn = NULL;
+    for (unsigned k = 0; k < BLURB_DRAWINGS && !drawn; k++) {
+        const blurb_drawing *d = &v->blurb_drawings[(v->blurb_drawings_head + BLURB_DRAWINGS - 1u - k) % BLURB_DRAWINGS];
+        if (d->valid && memcmp(d->oam, oam, sizeof d->oam) == 0) drawn = d;
+    }
+    const uint8_t *blurb = drawn ? NULL : area_blurb(v);
+    if (drawn ? !drawn->there : !blurb) return;
+    int built_x = drawn ? drawn->x : blurb[ORACLES_OBJ_XH];
+    const uint8_t built_y = drawn ? drawn->y : blurb[ORACLES_OBJ_YH], state = drawn ? drawn->state : blurb[ORACLES_OBJ_STATE];
+    const int camera_x = drawn ? drawn->camera_x : ob->drawn_camera_x, camera_y = drawn ? drawn->camera_y : ob->drawn_camera_y;
+    /* The slide out (state 3) runs the byte past 0 to the left; the slide in starts at $b0, to the right. */
+    if (state == 3u && built_x >= 128) built_x -= 256;
+    v->blurb_shown = 1;
+    v->blurb_built_x = built_x;
+    v->blurb_built_y = built_y;
+    v->blurb_built_camera_x = camera_x;
     /* Its sprites: one 8x16 column every 8 px from OAM x = x (screen x - 8),
      * on the OAM line y + 24, less the camera the OAM was built with; a column
      * past the left edge is not written. */
-    const unsigned oy = (unsigned)(blurb[ORACLES_OBJ_YH] - ob->drawn_camera_y + 24) & 0xffu;
-    const int left = built_x - ob->drawn_camera_x - 8;   /* the OAM x of its first column */
+    const unsigned oy = (unsigned)(built_y - camera_y + 24) & 0xffu;
+    const int left = built_x - camera_x - 8;   /* the OAM x of its first column */
     for (unsigned i = 0; i < 40u; i++) {
         const uint8_t *e = oam + i * 4u;
         const int dx = (int)e[1] - left;
@@ -198,12 +235,11 @@ void ev_find_area_blurb(OraclesEnhancedView *v)
 void ev_overlay_area_blurb(OraclesEnhancedView *v, int32_t camera_x, int32_t camera_y)
 {
     const OraclesEnhancedObservation *ob = &v->observation;
-    const uint8_t *blurb = v->blurb;
     const uint8_t *oam = oracles_guest_oam(v->guest), *io = oracles_guest_io(v->guest), *palettes = oracles_guest_obj_palettes(v->guest);
     const uint8_t *vram0 = oracles_guest_vram(v->guest, 0), *vram1 = oracles_guest_vram(v->guest, 1);
     const OraclesGuestTables *t = oracles_guest_tables(v->guest);
     const uint8_t *regs = oracles_guest_ptr(v->guest, t->gfx_regs3, 6);
-    if (!blurb || !v->blurb_mask || !oam || !io || !palettes || !vram0 || !vram1 || !regs || !(io[IO_LCDC] & 0x02u)) return;
+    if (!v->blurb_shown || !v->blurb_mask || !oam || !io || !palettes || !vram0 || !vram1 || !regs || !(io[IO_LCDC] & 0x02u)) return;
     const int built_x = v->blurb_built_x;
     uint8_t without[160];
     memcpy(without, oam, sizeof without);
@@ -249,10 +285,10 @@ void ev_overlay_area_blurb(OraclesEnhancedView *v, int32_t camera_x, int32_t cam
      * game's 160 px to the band's width, so that it enters from the band's edge. */
     const int x = built_x;
     const int band_x = x <= 16 ? x : 16 + (x - 16) * (int)v->size.width / (int)ORACLES_ENHANCED_CORE_WIDTH;
-    const int shift = band_x - (x - ob->drawn_camera_x);   /* band column minus screen column */
+    const int shift = band_x - (x - v->blurb_built_camera_x);   /* band column minus screen column */
     for (unsigned n = 0; n < count; n++) {
         /* The line its room y gives on the LCD with the room's camera at 0: the top of the game area. */
-        const int sx = (int)entries[n].x - 8 + shift, sy = (int)blurb[ORACLES_OBJ_YH] + 24 - 16 - (int)ORACLES_ENHANCED_HUD_HEIGHT;
+        const int sx = (int)entries[n].x - 8 + shift, sy = (int)v->blurb_built_y + 24 - 16 - (int)ORACLES_ENHANCED_HUD_HEIGHT;
         const uint8_t tile = entries[n].tile, attr = entries[n].attr;
         const uint8_t *bank = (attr & 0x08u) ? vram1 : vram0;
         const uint8_t *palette = palettes + (attr & 0x07u) * 8u;

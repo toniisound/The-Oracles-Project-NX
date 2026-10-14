@@ -162,6 +162,7 @@ void oracles_enhanced_check_frame_end(OraclesEnhancedCheck *c, uint32_t frame)
         c->last_play_room = ob->room;
     }
 
+    ec_check_blurb(c, mode, frame);
     check_pixels_and_row(c, ob, mode, surface, camera_x, camera_y, frame, hash, shown, room, uncovered);
     if (c->paced) {   /* the frame's end at its time of play, waited for on the clock alone */
         if (!c->paced_start) c->paced_start = ec_monotonic_us() - (double)frame * 16742.706;
@@ -205,6 +206,7 @@ void oracles_enhanced_check_event(OraclesEnhancedCheck *c, const OraclesGuestEve
 {
     const OraclesGuestTables *t = oracles_guest_tables(c->guest);
     if (c->link_sprites) oracles_sprites_event(c->link_sprites, event);
+    if (event->type == ORACLES_EVENT_FRAME_DRAWN) ec_note_blurb_drawn(c);
     if (event->type == ORACLES_EVENT_ROOM_INITIALIZED && c->pending_transition) { judge_shown_terrain(c, t); return; }
     if (event->type != ORACLES_EVENT_ROOM_ENTER) return;
     if (oracles_guest_read8(c->guest, t->scroll_mode) != SCROLL_MODE_TRANSITION_LOAD) return;
