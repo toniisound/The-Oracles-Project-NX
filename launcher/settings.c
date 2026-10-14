@@ -240,6 +240,7 @@ void oracles_settings_defaults(oracles_settings *s)
     memset(s->language, 0, sizeof s->language);   /* English, the US ROM's own */
     memset(s->fan_language, 0, sizeof s->fan_language);
     memset(s->mods, 0, sizeof s->mods);
+    s->mods_path[0] = 0;   /* beside settings.txt, until Android's shared storage names it */
     memset(s->cheats, 0, sizeof s->cheats);   /* the game as it plays */
     /* A first opening plays Enhanced, the view drawn back with the continuous transitions it carries, fullscreen. */
     s->profile = ORACLES_PROFILE_ENHANCED;
