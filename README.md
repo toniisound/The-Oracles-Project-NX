@@ -38,6 +38,18 @@ macOS, Windows (MSYS2) and Android are in [`docs/BUILDING.md`](docs/BUILDING.md)
 
 No ROM, no asset of the games, no data decompressed from a ROM, no code of the games. You provide your own ROM of Oracle of Ages or Oracle of Seasons (US); a fan game needs that ROM and the game's own BPS patch. The addresses and symbol names the host uses come from the [oracles-disasm](https://github.com/Stewmath/oracles-disasm) disassembly, at the commit pinned in `config/disasm.json`, through tables generated from its symbol files; the CI audits that no ROM byte enters the repository. Tests that need a ROM are skipped without one, never simulated.
 
+The port recognises these files by their SHA-1:
+
+| File you provide | Expected SHA-1 |
+|---|---|
+| Oracle of Ages (US) | `880374fb978b18af4aa529e2e32f7ffb4d7dd2f4` |
+| Oracle of Seasons (US) | `ba1268290fb2b1b70505d2d7b5825fc8a4816a4b` |
+| Oracle of Ages (EU), for the languages | `9f2dff3c46406839f839a8d535353dfc1e3e8670` |
+| Oracle of Seasons (EU), for the languages | `360b9408e569ba826212eac1ebea1b09573cb48c` |
+| Gifts of Kinomi 1.1.2 patch (`.bps`), on Ages (US) | `bb0837fd2c62a8b3ea05da22ed6049ab57cfa1e2` |
+| Moonrise Regalia 1.0.6 patch (`.bps`), on Ages (US) | `fcef50de31ce3e57d3e23cd846c0749e42098e08` |
+| Temple of Seasons 1.073 patch (`.bps`), on Seasons (US) | `0646e0a8fd6830198e453fdfeeea4a0a7c01cdf4` |
+
 ## Platforms
 
 - Linux and macOS (Intel and Apple Silicon), with SDL 3;
