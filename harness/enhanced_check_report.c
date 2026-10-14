@@ -40,6 +40,8 @@ static void summary_of_the_band(OraclesEnhancedCheck *c, FILE *out)
         unsigned fade_frames = 0, faded = 0;
         oracles_enhanced_view_fade_counts(c->view, &fade_frames, &faded);
         fprintf(out, "enhanced.fade_frames=%u\nenhanced.faded_objects=%u\n", fade_frames, faded);
+        oracles_enhanced_view_fade_out_counts(c->view, &fade_frames, &faded);
+        fprintf(out, "enhanced.fade_out_frames=%u\nenhanced.faded_out_objects=%u\n", fade_frames, faded);
         unsigned shown = 0, jumps = 0, holes = 0, unseen = 0;
         oracles_enhanced_view_handoff_counts(c->view, &shown, &jumps, &holes, &unseen);
         fprintf(out, "enhanced.handoff_shown=%u\nenhanced.handoff_jumps=%u\nenhanced.handoff_hole_frames=%u\nenhanced.handoff_unseen=%u\n", shown, jumps, holes, unseen);

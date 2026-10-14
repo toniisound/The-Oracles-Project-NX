@@ -36,9 +36,10 @@ static const uint8_t *live_room_object(OraclesEnhancedView *v, const OraclesSpri
     return object;
 }
 
-int ev_live_room_objects_oam(OraclesEnhancedView *v, uint8_t out[160])
+int ev_live_room_objects_oam(OraclesEnhancedView *v, uint8_t out[160], OraclesSpriteTag kept[ORACLES_SPRITE_TAGS], unsigned *kept_count)
 {
     memset(out, 0, 160);
+    *kept_count = 0;
     const uint8_t *oam = oracles_guest_oam(v->guest);
     if (!v->live_sprites || !oam) return 0;
     OraclesSpriteTag tags[ORACLES_SPRITE_TAGS];
@@ -46,6 +47,7 @@ int ev_live_room_objects_oam(OraclesEnhancedView *v, uint8_t out[160])
     int any = 0;
     for (unsigned i = 0; i < count; i++) {
         if (!live_room_object(v, &tags[i])) continue;
+        kept[(*kept_count)++] = tags[i];
         for (unsigned n = 0; n < tags[i].count && tags[i].first + n < 40u; n++) {
             memcpy(out + (tags[i].first + n) * 4u, oam + (tags[i].first + n) * 4u, 4u);
             any = 1;
@@ -85,7 +87,7 @@ void ev_capture_source_terrain(OraclesEnhancedView *v)
      * capture as the game draws them: it becomes the image of the room when a
      * scroll leaves it.  Link, his companion and his items are left out. */
     uint8_t objects_oam[160];
-    const int with_objects = v->neighbour_objects && ev_live_room_objects_oam(v, objects_oam);
+    const int with_objects = v->neighbour_objects && ev_live_room_objects_oam(v, objects_oam, v->source_tags, &v->source_tag_count);
     in.vram = oracles_guest_vram(v->guest, 0);
     in.oam = with_objects ? objects_oam : oracles_guest_oam(v->guest);
     in.bg_palettes = oracles_guest_bg_palettes(v->guest);
@@ -97,6 +99,10 @@ void ev_capture_source_terrain(OraclesEnhancedView *v)
     v->source_render_regs = r;
     memcpy(v->source_oam, in.oam, sizeof v->source_oam);
     memcpy(v->source_obj_palettes, in.obj_palettes, sizeof v->source_obj_palettes);
+    if (!with_objects) v->source_tag_count = 0;
+    /* Its objects' records, numbered by the room's entry: which of them the
+     * room's capture shows, once a scroll leaves it (view_objects.c). */
+    v->source_object_count = with_objects ? oracles_objects_snapshot(v->live_objects, v->source_objects, ORACLES_OBJECT_RECORDS) : 0;
     v->source_area_pending = 1;
     ev_scroll_keep_capture(v, &r, in.bg_palettes);
     v->source_shown_version = 0;

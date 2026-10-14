@@ -108,11 +108,11 @@ What the band shows of a neighbour's objects, at one of two levels (`--enhanced-
 From the frame the game decides a transition (T1) to the end of the scroll (Tfin), each object drawn has one source per frame:
 
 - inside the core's window, the core draws the live objects; an object of the entered room that is still invisible (before its initialisation) is not there, and the view adds nothing inside the window;
-- outside the window, the objects of the room left: an image of that room's sprites taken at the frame before the decision, until Tfin;
+- outside the window, the objects of the room left: its capture for those it shows where the game last drew them; the others (placed at random, created by another object, unpaired, or captured elsewhere) from an image of that room's sprites taken at the frame before the decision, whole until Tfin, then fading out over sixteen frames; the whole image where the room has no capture;
 - outside the window, the entered room's objects: the capture, for the objects that are paired with a live one, at the live object's position once it has initialised, at the captured position before; nothing for the others;
 - the only live sprites the view draws past the window's edges are Link and the objects of mode 3; the live OAM entries of objects of modes 1 and 2 that fall outside the left and top edges are ignored, recognised by the tags of the live instance's sprites.
 
-After Tfin the entered room is the active one and entirely in the window: the core draws its objects.
+After Tfin the entered room is the active one and entirely in the window: the core draws its objects. The entered room's objects the capture did not show fade in over sixteen frames from the frame they become visible, as the room left's fade out beyond the window.
 
 ### Pairing
 

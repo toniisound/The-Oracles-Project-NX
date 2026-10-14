@@ -215,6 +215,9 @@ unsigned oracles_enhanced_hud_fill(const OraclesEnhancedBar *bar, uint32_t (*pix
  * bar, its bottom 128 the game area of the active room.  Returns the number
  * of world-band pixels no source covered (black), 0 in framed mode. */
 unsigned oracles_enhanced_compose(const uint32_t *core, const OraclesEnhancedCompose *in, uint32_t *out);
+/* An RGB555 colour of a source that does not carry the game's palette fade, as the compose draws it: the fade
+ * (-32 to 31) applied as the game applies it, then the pixel of `colours` (NULL: plain RGB). */
+uint32_t oracles_enhanced_faded_pixel(const uint32_t *colours, uint32_t rgb555, int fade);
 
 #ifdef __cplusplus
 }

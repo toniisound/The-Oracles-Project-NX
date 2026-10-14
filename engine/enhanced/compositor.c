@@ -22,15 +22,17 @@ static uint32_t pixel_of(const uint32_t *colours, unsigned colour)
     return out;
 }
 
-static uint32_t faded(const OraclesEnhancedCompose *in, uint32_t rgb555, int fade)
+uint32_t oracles_enhanced_faded_pixel(const uint32_t *colours, uint32_t rgb555, int fade)
 {
     unsigned colour = 0;
     for (unsigned shift = 0; shift < 15u; shift += 5u) {
         const int v = (int)((rgb555 >> shift) & 31u) + fade;
         colour |= (unsigned)(v < 0 ? 0 : v > 31 ? 31 : v) << shift;
     }
-    return pixel_of(in->colours, colour);
+    return pixel_of(colours, colour);
 }
+
+static uint32_t faded(const OraclesEnhancedCompose *in, uint32_t rgb555, int fade) { return oracles_enhanced_faded_pixel(in->colours, rgb555, fade); }
 
 uint16_t oracles_enhanced_bar_pixel(const OraclesEnhancedBar *bar, unsigned x, unsigned y, int *hides_sprite)
 {

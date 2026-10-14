@@ -28,6 +28,7 @@ Most of this release answers what players asked for after 1.1.0, many of them on
 
 ### Fixed
 
+- Enemies of the room Link leaves no longer vanish at the edge of the game's own screen during the scroll: they stay where they were and fade out once it ends, as the ones of the room entered fade in.
 - Walking diagonally or on stairs in Enhanced, Link no longer shakes a pixel back and forth against the screen. The fix in 1.1.0 was not enough; the camera now follows Link where the picture draws him.
 - Entering or leaving a house or a shop with the game's menus enlarged (the default on Android) no longer shows the room enlarged before it shrinks back: the room stays at the view's scale while it loads.
 - With the Fast (mGBA) core on Windows, mods could misbehave; they now play as on the other platforms.

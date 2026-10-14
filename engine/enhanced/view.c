@@ -186,7 +186,7 @@ void oracles_enhanced_view_set_neighbour_objects(OraclesEnhancedView *v, int ena
             oracles_objects_destroy(v->live_objects); v->live_objects = NULL;
         }
     }
-    v->left_valid = 0;
+    v->left_valid = 0; v->vanish_active = 0;
     ev_invalidate_all(v);   /* the cached renders were made without the objects */
 }
 
@@ -411,22 +411,8 @@ const uint32_t *oracles_enhanced_view_compose(OraclesEnhancedView *v, OraclesEnh
         entry *left = ev_find_entry(v, v->source_group, v->source_room);
         if (left && left->valid) ev_hand_live_animation(v, left);
     }
-    /* The first frame of a transition: the last capture of the room in play,
-     * its objects in it, becomes the image of the room left (design, 6.2.2). */
-    if (v->neighbour_objects && v->observation.in_transition && !v->was_in_transition && v->source_valid && !v->observation.large_grid) {
-        memcpy(v->left_area, ev_source_area(v), sizeof v->left_area);
-        v->left_group = v->source_group;
-        v->left_room = v->source_room;
-        v->left_left = v->source_left;
-        v->left_top = v->source_top;
-        v->left_epoch = v->source_epoch;
-        v->left_pipeline = v->source_pipeline;
-        memcpy(v->left_vram, v->source_vram, sizeof v->left_vram);
-        v->left_regs = v->source_regs;
-        memcpy(v->left_palettes, v->source_palettes, sizeof v->left_palettes);
-        v->left_shown_version = 0;
-        v->left_valid = 1;
-    }
+    if (v->neighbour_objects && v->observation.in_transition && !v->was_in_transition && v->source_valid && !v->observation.large_grid)
+        ev_keep_left_image(v, camera_x, camera_y);
     /* What the live game itself showed: Link scrolled out of a room and
      * arrived somewhere.  When the room he left is one the game may route,
      * the arrival says whether it routed, and no ghost run had to ask --
@@ -492,6 +478,7 @@ const uint32_t *oracles_enhanced_view_compose(OraclesEnhancedView *v, OraclesEnh
     v->uncovered = oracles_enhanced_compose(ev_scroll_window(v), &in, v->surface);
     ev_find_area_blurb(v);
     if (in.mode == ORACLES_ENHANCED_WORLD) {
+        ev_fade_vanishing(v, camera_x, camera_y);
         ev_overlay_large_objects(v, camera_x, camera_y);
         ev_overlay_edge_sprites(v, camera_x, camera_y);
         ev_overlay_area_blurb(v, camera_x, camera_y);
@@ -788,7 +775,7 @@ int oracles_enhanced_view_load_state(OraclesEnhancedView *v, const uint8_t *data
     /* The objects' bookkeeping: the image of the room left,
      * the fade and the hand-off of an entry, the live numbering and tags,
      * a large room's drawings. */
-    v->left_valid = 0;
+    v->left_valid = 0; v->vanish_active = 0;
     v->appear_active = 0; v->appear_ready = 0; v->appear_ended = 0;
     v->handoff_count = 0; v->handoff_armed = 0;
     oracles_sprites_forget(v->live_sprites);

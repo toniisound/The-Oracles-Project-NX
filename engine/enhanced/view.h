@@ -120,6 +120,8 @@ int oracles_enhanced_view_hud(const OraclesEnhancedView *view);
 void oracles_enhanced_view_hud_counts(const OraclesEnhancedView *view, unsigned *frames, unsigned *lines_kept);
 /* Frames that drew the fade of objects appearing on entry, and objects that started one. */
 void oracles_enhanced_view_fade_counts(const OraclesEnhancedView *view, unsigned *frames, unsigned *objects);
+/* Frames that drew the fade of objects an image of a room left showed, once replaced, and objects that started one. */
+void oracles_enhanced_view_fade_out_counts(const OraclesEnhancedView *view, unsigned *frames, unsigned *objects);
 /* The hand-off of the objects a capture showed, on the data: objects followed,
  * live twins that appeared elsewhere (jumps), frames an object overlapped the
  * game's window before its twin was visible (holes), objects never seen. */

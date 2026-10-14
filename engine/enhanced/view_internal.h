@@ -252,6 +252,23 @@ struct OraclesEnhancedView {
     int32_t left_left, left_top;
     uint64_t left_epoch;
     int left_pipeline;
+    /* What its objects were drawn from (the capture's source_* fields). */
+    OraclesPpuRegs left_render_regs;
+    uint8_t left_oam[160], left_obj_palettes[64];
+    OraclesSpriteTag left_tags[ORACLES_SPRITE_TAGS];
+    unsigned left_tag_count;
+    OraclesObjectRecord left_objects[ORACLES_OBJECT_RECORDS];
+    unsigned left_object_count;
+    /* The objects of the room a scroll left that its capture does not show
+     * where the game last drew them, which fade out (view_objects.c): their
+     * pixels in the image of that room, RGB555, VANISH_NONE elsewhere, at the
+     * room's place. */
+    uint32_t vanish_area[ORACLES_GHOST_AREA_WIDTH * ORACLES_GHOST_AREA_HEIGHT];
+    int vanish_active;
+    uint32_t vanish_first;           /* the view's frame the fade started on, the first out of the scroll; 0: the scroll goes on */
+    int32_t vanish_left, vanish_top;
+    uint64_t vanish_epoch;
+    unsigned fade_out_frames, faded_out_objects;   /* frames that drew a fade out, objects that started one */
     int was_in_transition;
     /* The room a scrolling transition started in, and the direction it
      * scrolled: what the arrival teaches about a room the game may route. */
@@ -476,6 +493,10 @@ struct OraclesEnhancedView {
     int source_area_pending;
     OraclesPpuRegs source_render_regs;
     uint8_t source_oam[160], source_obj_palettes[64];
+    OraclesSpriteTag source_tags[ORACLES_SPRITE_TAGS];   /* the tags of its objects' sprites in source_oam */
+    unsigned source_tag_count;
+    OraclesObjectRecord source_objects[ORACLES_OBJECT_RECORDS];
+    unsigned source_object_count;
     int source_valid;
     uint8_t source_group, source_room;
     int32_t source_left, source_top;
@@ -567,16 +588,19 @@ int ev_key_byte_exempt(const OraclesEnhancedView *v, long i, const uint8_t *snap
 int ev_entry_drawable(const OraclesEnhancedView *v, const entry *e);
 void ev_capture_source_terrain(OraclesEnhancedView *v);
 /* The OAM of the live frame on screen with only the sprites of the room's own
- * objects (kinds 1 to 3, not persistent), by the live tags; returns 0 when the
- * tags of that OAM are unknown or leave nothing. */
-int ev_live_room_objects_oam(OraclesEnhancedView *v, uint8_t out[160]);
+ * objects (kinds 1 to 3, not persistent), by the live tags, which it keeps in
+ * `kept`; returns 0 when the tags of that OAM are unknown or leave nothing. */
+int ev_live_room_objects_oam(OraclesEnhancedView *v, uint8_t out[160], OraclesSpriteTag kept[ORACLES_SPRITE_TAGS], unsigned *kept_count);
 /* Whether OAM entry `index` on screen belongs to an object of a room (kinds 1
  * to 3, not persistent): during a transition those are drawn beyond the
  * window by the captures and the image of the room left, not by the overlay. */
 int ev_live_entry_is_room_object(OraclesEnhancedView *v, unsigned index);
-/* view_objects.c: the events of the live instance, and the fade of what appears on entry. */
+/* view_objects.c: the events of the live instance, the fade of what appears on
+ * entry, the image of the room left and the fade of what it showed. */
 void ev_objects_event(OraclesEnhancedView *v, const OraclesGuestEvent *event);
 void ev_fade_appearing(OraclesEnhancedView *v, int32_t camera_x, int32_t camera_y);
+void ev_keep_left_image(OraclesEnhancedView *v, int32_t camera_x, int32_t camera_y);
+void ev_fade_vanishing(OraclesEnhancedView *v, int32_t camera_x, int32_t camera_y);
 int ev_source_is_scroll_source(const OraclesEnhancedView *v);
 void ev_track_animated_tiles(OraclesEnhancedView *v);
 /* Every frame the game animates: each cached neighbour's own animation, one step. */
