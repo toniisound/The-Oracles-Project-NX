@@ -2,13 +2,18 @@
 
 /* ---- the order of the ghost's runs ----------------------------------------------------------- */
 
-/* Whether the world band of the last composition shows part of a room of the grid. */
-static int room_in_view(const OraclesEnhancedView *v, uint8_t room)
+/* The margin around the band within which a room is about to be shown: some
+ * thirty frames of Link's walk or swim, more than a run takes. */
+#define SOON_SHOWN_MARGIN 32
+
+/* Whether the world band of the last composition shows part of a room of the
+ * grid, or, `reach` px wider on every side, is about to. */
+static int room_in_view(const OraclesEnhancedView *v, uint8_t room, int32_t reach)
 {
     if (!v->have_view) return 0;
     if (v->observation.large_grid) return 1;   /* a large room's neighbours are not placed by their index; all one step away */
     const int32_t left = (int32_t)(room & 0x0fu) * SMALL_ROOM_W, top = (int32_t)(room >> 4u) * (int32_t)ORACLES_GHOST_AREA_HEIGHT;
-    return ev_shown_meets(v, v->view_left, v->view_top, left, top, SMALL_ROOM_W, (int32_t)ORACLES_GHOST_AREA_HEIGHT, 0);
+    return ev_shown_meets(v, v->view_left, v->view_top, left, top, SMALL_ROOM_W, (int32_t)ORACLES_GHOST_AREA_HEIGHT, reach);
 }
 
 /* Whether an entry needs a run now: none, or failed long enough ago; a run
@@ -40,9 +45,9 @@ static int run_from_live(OraclesEnhancedView *v, entry *e, OraclesGhostDirection
 /* A room whose parent is a room the game routes itself (Seasons' 0:b9, above
  * the sword upgrade room 0:c9 and entered only through it): the scroll out of
  * the parent goes elsewhere.  The drawn-back band asks for it from another
- * room beside it that the ghost has delivered, going toward it, under the
- * corners' rule: only while that room holds for the live key and the enemies
- * killed, never run again for it.  Returns 1 when a run was started. */
+ * room beside it that the ghost has delivered, going toward it, only while
+ * that room holds for the live key and the enemies killed, never run again
+ * for it.  Returns 1 when a run was started. */
 static int run_from_other_side(OraclesEnhancedView *v, entry *e, const entry *routed, const uint8_t *key, size_t key_len)
 {
     for (unsigned d = 0; d < 4u; d++) {
@@ -299,7 +304,7 @@ static int schedule_routed_beyond(OraclesEnhancedView *v, run_plan *p, int visib
         const OraclesGhostDirection dir = (OraclesGhostDirection)d;
         const OraclesGhostDirection across[2] = { d & 1u ? ORACLES_DIR_UP : ORACLES_DIR_LEFT, d & 1u ? ORACLES_DIR_DOWN : ORACLES_DIR_RIGHT };
         for (unsigned k = 0; k < 5u; k++) {
-            if (!have[k] || (visible_only && !room_in_view(v, rooms[k]))) continue;
+            if (!have[k] || (visible_only && !room_in_view(v, rooms[k], 0))) continue;
             entry *beyond = k >= 3u ? ev_find_entry(v, p->group, rooms[0]) : NULL;
             if (k >= 3u && (!beyond || !beyond->valid)) continue;
             entry *e = ev_take_slot(v, p->group, rooms[k], p->wanted, p->wanted_count);
@@ -311,6 +316,18 @@ static int schedule_routed_beyond(OraclesEnhancedView *v, run_plan *p, int visib
         }
     }
     return 0;
+}
+
+/* Whether the rooms around the reference room (its neighbours, the two
+ * beyond left and right, the diagonals) are there, failed or under way: the
+ * band's fill after a warp or a load is over. */
+static int near_ready(OraclesEnhancedView *v, const run_plan *p)
+{
+    for (unsigned w = 1; w < p->near_count; w++) {
+        const entry *e = ev_find_entry(v, p->group, p->wanted[w]);
+        if (!e || !(e->valid || e->in_flight || e->failed)) return 0;
+    }
+    return 1;
 }
 
 /* A step of the run order: a room of the plan and the way it is run. */
@@ -433,11 +450,29 @@ static int run_step_now(OraclesEnhancedView *v, run_plan *p, const run_step *st)
     }
     case STEP_CORNER: {
         /* From the second ring's diagonal beside it, going up or down, only
-         * while that one holds for the live key and for the enemies killed: a
-         * corner never has its parent run again, which would need a run three
-         * rooms back. */
+         * while that one holds for the live key and for the enemies killed.
+         * A corner never runs its parent again itself, which would need a run
+         * three rooms back: a parent that no longer holds for the key while
+         * the corner has nothing is marked to be run again, and its own step
+         * runs it from its diagonal, the chain going back as far as it must
+         * (a corner stayed black otherwise until Link left the room: Ages'
+         * wSeedTreeRefilledBitset, changed since the parent's run).  Once
+         * until it holds again: a parent run again that still does not hold
+         * differs where a run cannot help (the visited flags its chain sets
+         * in rooms Link has not entered); and not while the band fills, whose
+         * rooms beside Link go first. */
         entry *parent = ev_find_entry(v, group, p->second_diagonal[u][s]);
-        if (!parent || !parent->valid || parent->refresh || parent->rerun || !ev_entry_key_current(v, parent, p->key, p->key_len, group, p->corner[u][s])) return 0;
+        if (!parent || !parent->valid || parent->refresh || parent->rerun) return 0;
+        if (!ev_entry_key_current(v, parent, p->key, p->key_len, group, p->corner[u][s])) {
+            const entry *corner = ev_find_entry(v, group, p->corner[u][s]);
+            if (!(corner && corner->valid) && !parent->in_flight && !parent->corner_asked && near_ready(v, p)) {
+                parent->rerun = 1;
+                parent->rerun_at = v->frame;
+                parent->corner_asked = 1;
+            }
+            return 0;
+        }
+        parent->corner_asked = 0;
         if (v->neighbour_objects && oracles_objects_killed_in_list(parent->killed_list, p->corner[u][s]) != oracles_objects_killed_enemies(v->guest, p->corner[u][s])) return 0;
         entry *e = ev_take_slot(v, group, p->corner[u][s], p->wanted, p->wanted_count);
         return entry_wanting(v, e) && run_from_parent(v, e, parent, plan_verticals[u], plan_verticals[u], 0, NULL, plan_verticals[u], p->key, p->key_len, p->live_primeable);
@@ -512,6 +547,15 @@ void oracles_enhanced_band_order(const int32_t *shown, const int32_t *distance, 
         }
 }
 
+/* How far past the band the first pass looks: in the drawn-back band, once
+ * the rooms around the reference room are there (near_ready), the margin;
+ * else the band alone, so that a room about to show does not go before a
+ * room beside Link the next scroll brings (the band's fill). */
+static int32_t soon_reach(OraclesEnhancedView *v, const run_plan *p)
+{
+    return ev_drawn_back(v) && near_ready(v, p) ? SOON_SHOWN_MARGIN : 0;
+}
+
 /* One pass of the run order; returns 1 when a run was started. */
 static int schedule_pass(OraclesEnhancedView *v, run_plan *p, int visible_only)
 {
@@ -519,8 +563,10 @@ static int schedule_pass(OraclesEnhancedView *v, run_plan *p, int visible_only)
     if (p->routed && schedule_routed_beyond(v, p, visible_only)) return 1;
     run_step steps[28];
     const unsigned n = list_steps(v, p, visible_only, steps);
+    const int32_t reach = visible_only ? soon_reach(v, p) : 0;
     for (unsigned i = 0; i < n; i++) {
-        if (visible_only && !room_in_view(v, steps[i].room)) continue;   /* the first pass: only what the band shows (a black patch on screen) */
+        /* The first pass: only what the band shows (a black patch on screen) or is about to. */
+        if (visible_only && !room_in_view(v, steps[i].room, reach)) continue;
         if (run_step_now(v, p, &steps[i])) return 1;
     }
     return 0;
@@ -544,8 +590,8 @@ static void keep_plan(OraclesEnhancedView *v, const run_plan *p)
  * from the live state; and their left and right neighbours, from their
  * settled states, so that a vertical transition finds its row ready.  Two
  * passes over the same order: first the rooms the world band shows right now
- * (a black patch on screen), then the rest, so that a room Link walks toward
- * after a warp comes before a room two away. */
+ * (a black patch on screen) or is about to show, then the rest, so that a room
+ * Link walks toward after a warp comes before a room two away. */
 static void schedule_idle(OraclesEnhancedView *v, run_plan *p, run_plan *q);
 
 void ev_update_neighbours(OraclesEnhancedView *v)

@@ -267,8 +267,10 @@ static unsigned add_grid_sources(OraclesEnhancedView *v, OraclesEnhancedNeighbou
     if (plain_shown) v->plain_shown_frames++;
     for (unsigned d = 0; d < 4; d++) if (v->shown_slot[d] < SLOTS) v->shown[d] = 1;
     const entry *captured = ev_on_map(v) && v->source_valid ? ev_find_entry(v, v->source_group, v->source_room) : NULL;
-    if (ev_source_is_scroll_source(v) && !ev_entry_drawable(v, captured))
+    if (ev_source_is_scroll_source(v) && !ev_entry_drawable(v, captured)) {
         add_source(&nbs[count++], v->source_left, v->source_top, ev_scroll_capture(v, 0), 0, 0, 0);
+        if (v->source_group == v->observer.ref_group && !v->observation.large_grid) v->drawn_places[v->source_room >> 5u] |= 1u << (v->source_room & 31u);
+    }
     /* The image of the room left, drawn over its capture of apparition while it
      * stays in the band; dropped once it leaves the band, once Link is back in
      * it (the game recreates its objects), or on a new epoch (a warp, a load). */
@@ -793,6 +795,7 @@ int oracles_enhanced_view_load_state(OraclesEnhancedView *v, const uint8_t *data
     }
     ev_invalidate_all(v);
     v->coarse_len = 0;   /* the coarse list is taken again from the state loaded */
+    v->black_loaded = 1;   /* the band fills again (view_black.c) */
     return 0;
 }
 

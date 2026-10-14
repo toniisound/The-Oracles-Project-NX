@@ -707,6 +707,10 @@ static void finish(session *s, const OraclesSessionOptions *o)
         for (unsigned i = 0; i < black.rooms_over && i < ORACLES_ENHANCED_BLACK_ROOMS_KEPT; i++)
             fprintf(stderr, "%s%u:%02x from frame %u, %u frames", i ? ", " : " (", black.longest[i].group, black.longest[i].room, black.longest[i].from, black.longest[i].frames);
         fprintf(stderr, "%s\n", black.rooms_over ? ")" : "");
+        fprintf(stderr, "oracles: black episodes by cause (episodes, world frames with one, the longest in frames, begun in a transition):");
+        for (unsigned k = 0; k < ORACLES_ENHANCED_BLACK_KINDS; k++)
+            fprintf(stderr, "%s %s %u, %u, %u, %u", k ? ";" : "", oracles_enhanced_black_kind_name(k), black.kinds[k].episodes, black.kinds[k].frames, black.kinds[k].longest, black.kinds[k].in_transition);
+        fprintf(stderr, "\n");
         oracles_enhanced_view_stop(s->view);
     }
     if (s->diag) oracles_diagnostics_stop(s->diag);

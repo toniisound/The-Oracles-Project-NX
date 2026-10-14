@@ -130,6 +130,7 @@ typedef struct entry {
     int near;                           /* last wanted near its reference room, not in the second ring: evicted after the others */
     int rerun;                          /* valid and drawn, its settled state not a start for the rooms beyond: run again from the live state */
     uint32_t rerun_at;                  /* when a chained run last asked for that */
+    int corner_asked;                   /* a corner beyond it asked for that, and it has not held for the key since (view_schedule.c) */
     uint8_t season;                     /* the season it was loaded in */
     uint8_t collisions[ORACLES_GHOST_LAYOUT_BYTES];
     uint8_t tiles[2u * ORACLES_GHOST_TILE_BYTES];   /* its own tile data: tileset, unique graphics, one animation frame */
@@ -224,6 +225,16 @@ struct OraclesEnhancedView {
     struct { uint8_t group, room; uint32_t since; } black_runs[32];   /* the places black now, and since when */
     uint32_t drawn_places[8];        /* the rooms of the reference's group the last composition drew at their place on the grid, a bit each */
     unsigned black_run_count;
+    /* The black by kind (view_black.c): the rooms' episodes under way, the edge's, the ripple's and the rest's, since
+     * when (0 none, else the frame plus one), and the frame the band's last fill began. */
+    struct { uint8_t group, room, kind, in_transition; uint32_t since; } black_episodes[32];
+    unsigned black_episode_count;
+    uint32_t black_place_since[3];
+    uint8_t black_place_transition[3];
+    uint32_t black_cold_from;
+    int black_have_ref, black_loaded;
+    uint8_t black_ref_group, black_ref_room;
+    char black_log[512];
     OraclesEnhancedSize size;        /* the surface's, a level's in a shape (oracles_enhanced_view_size), chosen before the first composition */
     unsigned band_height;            /* its world band's, oracles_enhanced_band_height of the size */
     unsigned shown_width, shown_height;   /* the part of the band the last composition showed, centred (oracles_enhanced_camera_shown) */

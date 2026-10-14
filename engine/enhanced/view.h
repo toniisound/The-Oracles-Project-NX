@@ -304,6 +304,21 @@ unsigned oracles_enhanced_view_coarse_drops(const OraclesEnhancedView *view);
 #define ORACLES_ENHANCED_BLACK_ROOM_FRAMES 120u
 #define ORACLES_ENHANCED_BLACK_ROOMS_KEPT 8u
 typedef struct OraclesEnhancedBlackRoom { uint8_t group, room; uint32_t from, frames; } OraclesEnhancedBlackRoom;
+/* The black told apart by its cause, in episodes: a run of world frames, a
+ * scroll's included, in which a room of the overworld's grid or of Ages'
+ * open sea shows nothing drawn (a corner, two rows and two columns from the
+ * room in play; another room; either while the band fills, less than
+ * ORACLES_ENHANCED_BLACK_COLD_FRAMES frames after the first world frame, a
+ * load or a warp), or the band shows a place of no room of its grid (past
+ * the map's edge, the sea's shore), or what is left black is the fringe of a
+ * ripple, or none of these. */
+#define ORACLES_ENHANCED_BLACK_COLD_FRAMES 300u
+enum { ORACLES_ENHANCED_BLACK_CORNER, ORACLES_ENHANCED_BLACK_NEIGHBOUR, ORACLES_ENHANCED_BLACK_COLD, ORACLES_ENHANCED_BLACK_EDGE,
+       ORACLES_ENHANCED_BLACK_RIPPLE, ORACLES_ENHANCED_BLACK_OTHER, ORACLES_ENHANCED_BLACK_KINDS };
+typedef struct OraclesEnhancedBlackKind {
+    unsigned episodes, frames, longest;   /* frames: world frames with one episode of the kind at least */
+    unsigned in_transition;               /* episodes whose first frame was in a transition */
+} OraclesEnhancedBlackKind;
 typedef struct OraclesEnhancedBlack {
     int have_world, have_full;
     uint32_t first_world, first_full;     /* the frames (composition ordinals, the route's frame numbers) */
@@ -311,8 +326,15 @@ typedef struct OraclesEnhancedBlack {
     uint64_t pixels;                      /* black pixels over them */
     unsigned rooms_over;                  /* rooms black for more than the threshold, a run each */
     OraclesEnhancedBlackRoom longest[ORACLES_ENHANCED_BLACK_ROOMS_KEPT];   /* the longest of them, longest first */
+    OraclesEnhancedBlackKind kinds[ORACLES_ENHANCED_BLACK_KINDS];
 } OraclesEnhancedBlack;
 void oracles_enhanced_view_black(const OraclesEnhancedView *view, OraclesEnhancedBlack *out);
+/* The black kinds' names (corner, neighbour, cold, edge, ripple, other), and the
+ * corners' and other rooms' episodes ended so far outside the band's fill,
+ * "c|n group:room from+frames" with a `t` when begun in a transition, the
+ * first that fit. */
+const char *oracles_enhanced_black_kind_name(unsigned kind);
+const char *oracles_enhanced_view_black_log(const OraclesEnhancedView *view);
 /* Whether a neighbour's settled state may start a run of the room whose
  * own flags sit at `own` in the key, the live state unable to prime the
  * ghost (a cutscene): its key the live one but for the flags of other rooms

@@ -689,6 +689,50 @@ static void black_count(void)
     rig_stop(&r);
 }
 
+/* The same black in episodes by cause, in far 4:3, no ghost to fill the
+ * band: the rooms around the first room are the band's fill; Link in the
+ * room beside, near its top right corner, shows the corner two columns and
+ * two rows away and other rooms, black from then on, until a menu ends them. */
+static void black_kinds(void)
+{
+    rig r;
+    memset(&r, 0, sizeof r);
+    CHECK(rig_start(&r));
+    OraclesEnhancedView *view = r.guest ? oracles_enhanced_view_start(r.core, r.guest, NULL, 0) : NULL;
+    CHECK(view != NULL);
+    if (!view) { rig_stop(&r); return; }
+    oracles_enhanced_view_set_size(view, oracles_enhanced_view_size(ORACLES_ENHANCED_FAR, ORACLES_ENHANCED_4_3));
+    const OraclesGuestTables *t = &oracles_guest_tables_ages;
+    uint8_t *w0 = oracles_guest_wram_writable(r.guest, 0), *w1 = oracles_guest_wram_writable(r.guest, 1);
+    uint8_t *link = w1 + (ORACLES_OBJECTS_BASE - 0xd000u);
+    #define W0(sym) w0[(sym).addr - 0xc000u]
+    W0(t->game_state) = 2; W0(t->cutscene_index) = 1; W0(t->scroll_mode) = 1; W0(t->screen_transition_state) = 2;
+    W0(t->active_group) = 0; W0(t->active_room) = 0x45; W0(t->room_is_large) = 0;
+    link[ORACLES_OBJ_ENABLED] = 1; link[ORACLES_OBJ_STATE] = 1; link[ORACLES_OBJ_XH] = 80; link[ORACLES_OBJ_YH] = 64;
+    OraclesEnhancedMode mode = ORACLES_ENHANCED_FRAMED;
+    int32_t cam = 0, cam_y = 0;
+    OraclesEnhancedBlack black;
+    frames(&r, view, ORACLES_ENHANCED_BLACK_COLD_FRAMES + 30u, &mode, &cam, &cam_y);
+    oracles_enhanced_view_black(view, &black);
+    CHECK(mode == ORACLES_ENHANCED_WORLD && black.kinds[ORACLES_ENHANCED_BLACK_COLD].episodes >= 8u);
+    CHECK(black.kinds[ORACLES_ENHANCED_BLACK_CORNER].episodes == 0 && black.kinds[ORACLES_ENHANCED_BLACK_NEIGHBOUR].episodes == 0);
+    CHECK(black.kinds[ORACLES_ENHANCED_BLACK_COLD].frames == black.kinds[ORACLES_ENHANCED_BLACK_COLD].longest);
+    CHECK(black.kinds[ORACLES_ENHANCED_BLACK_OTHER].episodes == 0 && black.kinds[ORACLES_ENHANCED_BLACK_RIPPLE].episodes == 0);
+    W0(t->active_room) = 0x46; link[ORACLES_OBJ_XH] = 150; link[ORACLES_OBJ_YH] = 10;
+    frames(&r, view, 60, &mode, &cam, &cam_y);
+    oracles_enhanced_view_black(view, &black);
+    CHECK(mode == ORACLES_ENHANCED_WORLD && black.kinds[ORACLES_ENHANCED_BLACK_CORNER].episodes == 1u && black.kinds[ORACLES_ENHANCED_BLACK_NEIGHBOUR].episodes >= 3u);
+    CHECK(black.kinds[ORACLES_ENHANCED_BLACK_CORNER].in_transition == 0 && oracles_enhanced_view_black_log(view)[0] == 0);
+    W0(t->opened_menu_type) = 1;
+    frames(&r, view, 5, &mode, &cam, &cam_y);
+    oracles_enhanced_view_black(view, &black);
+    CHECK(mode == ORACLES_ENHANCED_FRAMED && strstr(oracles_enhanced_view_black_log(view), "c 0:28 ") != NULL);
+    CHECK(black.kinds[ORACLES_ENHANCED_BLACK_CORNER].episodes == 1u && black.kinds[ORACLES_ENHANCED_BLACK_CORNER].longest <= 60u);
+    #undef W0
+    oracles_enhanced_view_stop(view);
+    rig_stop(&r);
+}
+
 /* A neighbour's settled state that may start a run while a cutscene holds
  * the game: its key the live one but for other rooms' flags (0:98 visited
  * since, as Din dances there), never the room's own nor anything else. */
@@ -792,6 +836,7 @@ int main(void)
     seasons_scenes();
     blank_captures();
     black_count();
+    black_kinds();
     parent_keys();
     beside_reads();
     if (failures) { fprintf(stderr, "%d failure(s)\n", failures); return 1; }

@@ -118,6 +118,12 @@ static void summary_of_what_was_shown(OraclesEnhancedCheck *c, FILE *out)
     fprintf(out, "enhanced.black_pixels_mean=%.0f\nenhanced.black_pixels_max=%u\nenhanced.cold_fill_frames=%d\nenhanced.black_rooms_over=%u\n",
             black.full_world_frames ? (double)black.pixels / black.full_world_frames : 0.0, black.max,
             black.have_full ? (int)(black.first_full - black.first_world) : -1, black.rooms_over);
+    /* The same black in episodes, by cause, a scroll's frames included (the session's report says them too). */
+    for (unsigned k = 0; k < ORACLES_ENHANCED_BLACK_KINDS; k++) {
+        const char *name = oracles_enhanced_black_kind_name(k);
+        fprintf(out, "enhanced.black_%s_episodes=%u\nenhanced.black_%s_frames=%u\nenhanced.black_%s_longest=%u\nenhanced.black_%s_in_transition=%u\n",
+                name, black.kinds[k].episodes, name, black.kinds[k].frames, name, black.kinds[k].longest, name, black.kinds[k].in_transition);
+    }
     /* The cached terrains thrown away because a byte of the cache key they read changed, and the times the coarse list threw the whole cache. */
     fprintf(out, "enhanced.drops=%u\n", oracles_enhanced_view_drop_log(c->view, NULL, 0));
     fprintf(out, "enhanced.sea_runs=%u\n", oracles_enhanced_view_sea_runs(c->view));   /* runs across the sea's surface, ahead of a dive or a return (Ages) */
@@ -186,6 +192,11 @@ static void report_the_band(OraclesEnhancedCheck *c, FILE *out)
     for (unsigned i = 0; i < black.rooms_over && i < ORACLES_ENHANCED_BLACK_ROOMS_KEPT; i++)
         fprintf(out, "%s%u:%02x from %u, %u frames", i ? ", " : " (", black.longest[i].group, black.longest[i].room, black.longest[i].from, black.longest[i].frames);
     fprintf(out, "%s\n", black.rooms_over ? ")" : "");
+    fprintf(out, "  black episodes by cause (episodes, world frames with one, longest, begun in a transition):");
+    for (unsigned k = 0; k < ORACLES_ENHANCED_BLACK_KINDS; k++)
+        fprintf(out, "%s %s %u, %u frames, %u, %u", k ? ";" : "", oracles_enhanced_black_kind_name(k), black.kinds[k].episodes, black.kinds[k].frames, black.kinds[k].longest, black.kinds[k].in_transition);
+    const char *log = oracles_enhanced_view_black_log(c->view);
+    fprintf(out, "%s%s\n", log[0] ? "; corners (c) and other rooms (n) outside the fill, from+frames: " : "", log);
 }
 
 /* What the band showed: the rooms entered, their terrain against the game's,
