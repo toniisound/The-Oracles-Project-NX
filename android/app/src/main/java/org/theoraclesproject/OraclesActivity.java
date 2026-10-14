@@ -1,4 +1,4 @@
-package io.github.thibautbus.theoraclesproject;
+package org.theoraclesproject;
 
 import android.database.Cursor;
 import android.graphics.Insets;

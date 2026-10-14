@@ -286,7 +286,8 @@ int main(int argc, char **argv)
     oracles_settings_load(&read_back);
     CHECK(read_back.menu_pad[0] == 0);
 
-    /* The mods folder beside settings.txt, whichever separator its path uses; none without a settings directory. */
+    /* The mods folder beside settings.txt, whichever separator its path uses, or where mods_path puts it (Android's
+     * shared storage), the language packs staying beside settings.txt; none without a settings directory. */
     oracles_settings mods_at;
     char folder[ORACLES_SETTINGS_PATH_LENGTH];
     oracles_settings_defaults(&mods_at);
@@ -300,6 +301,12 @@ int main(int argc, char **argv)
     CHECK(!strcmp(folder, "C:\\Users\\sam\\AppData\\Roaming\\the-oracles-project\\language-seasons.pack"));
     oracles_settings_fan_language_pack(&mods_at, ORACLES_HOME_FAN_KINOMI, folder, sizeof folder);
     CHECK(!strcmp(folder, "C:\\Users\\sam\\AppData\\Roaming\\the-oracles-project\\language-kinomi.pack"));
+    snprintf(mods_at.mods_path, sizeof mods_at.mods_path, "/storage/emulated/0/Android/data/org.theoraclesproject/files/mods");
+    oracles_settings_mods_folder(&mods_at, folder, sizeof folder);
+    CHECK(!strcmp(folder, "/storage/emulated/0/Android/data/org.theoraclesproject/files/mods"));
+    oracles_settings_language_pack(&mods_at, ORACLES_SETTINGS_SEASONS, folder, sizeof folder);
+    CHECK(!strcmp(folder, "C:\\Users\\sam\\AppData\\Roaming\\the-oracles-project\\language-seasons.pack"));
+    mods_at.mods_path[0] = 0;
     mods_at.path[0] = 0;
     oracles_settings_mods_folder(&mods_at, folder, sizeof folder);
     CHECK(folder[0] == 0);

@@ -101,6 +101,33 @@ const char *oracles_page_rom_hotkeys_note(const OraclesHomeNav *nav)
     return "Item hotkeys need an original ROM: this one plays without them";
 }
 
+/* What follows "<id>/files" in a path of the application's storage, `id` its first character; NULL when it is not one. */
+static const char *after_files(const char *id)
+{
+    const char *slash = strchr(id, '/');
+    if (!slash || slash == id || strncmp(slash + 1, "files", 5) || (slash[6] && slash[6] != '/')) return NULL;
+    return slash + 6;
+}
+
+void oracles_page_folder(int android, const char *folder, char *out, size_t capacity)
+{
+    const char *rest = NULL;
+    const char *shared = android ? strstr(folder, "/Android/data/") : NULL;
+    if (shared) { snprintf(out, capacity, "%s", shared + 1); return; }
+    if (android && !strncmp(folder, "/data/data/", 11)) {
+        rest = after_files(folder + 11);
+    } else if (android && !strncmp(folder, "/data/user/", 11) && strchr(folder + 11, '/')) {
+        rest = after_files(strchr(folder + 11, '/') + 1);
+    }
+    if (!rest) { snprintf(out, capacity, "%s", folder); return; }
+    size_t length = (size_t)snprintf(out, capacity, "%s", "App storage");
+    while (*rest == '/' && length < capacity) {
+        const size_t part = strcspn(rest + 1, "/");
+        if (part) length += (size_t)snprintf(out + length, capacity - length, " \xe2\x80\xba %.*s", (int)part, rest + 1);
+        rest += part + 1;
+    }
+}
+
 const char *oracles_page_save_file(const OraclesHomeGame *game) { return game->save_file[0] ? game->save_file : "No save yet"; }
 
 void oracles_page_save_line(const OraclesHomeGame *game, char *out, size_t capacity)

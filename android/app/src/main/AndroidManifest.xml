@@ -15,7 +15,7 @@
     <!-- The update check: one request to GitHub when the home screen opens (update_check=off: none). -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- hasFragileUserData: Android offers to keep the application's data at an uninstall, the ROMs, patches and saves
+    <!-- hasFragileUserData: Android offers to keep the application's data at an uninstall, the ROMs, patches, saves and mods
          of Android/data/<package>/files among them. -->
     <application android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"

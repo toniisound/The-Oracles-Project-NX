@@ -88,6 +88,11 @@ const char *oracles_page_rom_note(const OraclesHomeNav *nav);
 /* Under it: that the ROM plays without the item hotkeys Controls has on, when a session found they could not attach
  * to it; else empty. */
 const char *oracles_page_rom_hotkeys_note(const OraclesHomeNav *nav);
+/* A folder as the page shows it: on Android, a folder on the shared storage from its Android/data, as a computer sees
+ * it over USB ("Android/data/org.theoraclesproject/files/roms"), and a folder of the application's private files
+ * (/data/data/<id>/files/NAME), out of the player's reach, named "App storage › NAME"; any other folder, and every
+ * folder elsewhere, by its path. */
+void oracles_page_folder(int android, const char *folder, char *out, size_t capacity);
 const char *oracles_page_save_file(const OraclesHomeGame *game);        /* "No save yet" without one */
 void oracles_page_save_line(const OraclesHomeGame *game, char *out, size_t capacity);
 const char *oracles_page_play_note(const OraclesHomeNav *nav);          /* shown beside Play; empty mostly */
@@ -267,8 +272,12 @@ unsigned oracles_mods_active(const OraclesHomeNav *nav, int game);
  * the count under the list, the note on the save, and why Play cannot start (empty when it can). */
 void oracles_mods_games(const OraclesHomeMod *mod, char *out, size_t capacity);
 void oracles_mods_count(const OraclesHomeNav *nav, char *out, size_t capacity);
-extern const char oracles_mods_folder_line[], oracles_mods_empty[], oracles_mods_note[], oracles_mods_limit[];
+extern const char oracles_mods_empty[], oracles_mods_note[], oracles_mods_limit[];
 const char *oracles_mods_play_note(const OraclesHomeNav *nav);
+/* The folder the page shows, as oracles_page_folder shows a folder (on Android, from its Android/data), and the line
+ * under it: beside the launcher's settings, or on Android reachable over USB. */
+void oracles_mods_folder(const OraclesHomeNav *nav, char *out, size_t capacity);
+const char *oracles_mods_folder_line(const OraclesHomeNav *nav);
 
 OraclesHomeCommand oracles_mods_act(OraclesHomeNav *nav, OraclesHomeAction action);
 void oracles_mods_hover(OraclesHomeNav *nav, unsigned row);

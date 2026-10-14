@@ -9,7 +9,7 @@ Two examples come with the repository; a player copies each folder as it is into
 
 ## Running
 
-From the launcher: copy the mod's folder into the **mods folder**, beside the launcher's `settings.txt` (`~/.local/share/the-oracles-project/mods/` on Linux, `~/Library/Application Support/the-oracles-project/mods/` on macOS, `%APPDATA%\the-oracles-project\mods\` on Windows; the Mods page's **Open folder** makes it and opens it). Open the game's **Mods** page (Ages or Seasons), switch the mod on, and **Play**. The page lists every folder of the mods folder, in the order of their names, with the games the mod adds houses to and its description (`mod.description`), or `Refused: ` and the reason the loader gives, the same the command line prints; eight mods at most are active, and [`PLAYING.md`](PLAYING.md#mods) says the rest.
+From the launcher: copy the mod's folder into the **mods folder**, beside the launcher's `settings.txt` (`~/.local/share/the-oracles-project/mods/` on Linux, `~/Library/Application Support/the-oracles-project/mods/` on macOS, `%APPDATA%\the-oracles-project\mods\` on Windows, and on Android `Android/data/org.theoraclesproject/files/mods/`, on the shared storage, reachable over USB; the Mods page's **Open folder** makes it and opens it). Open the game's **Mods** page (Ages or Seasons), switch the mod on, and **Play**. The page lists every folder of the mods folder, in the order of their names, with the games the mod adds houses to and its description (`mod.description`), or `Refused: ` and the reason the loader gives, the same the command line prints; eight mods at most are active, and [`PLAYING.md`](PLAYING.md#mods) says the rest.
 
 From the command line:
 

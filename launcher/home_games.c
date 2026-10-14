@@ -490,10 +490,11 @@ static void open_folder(void *opaque, int game, char *message, size_t capacity)
     split_path(fan ? games->settings->patch[fan_index(fan)] : games->settings->rom[rom_setting(game)], file, sizeof file, folder, sizeof folder);
 #ifdef __ANDROID__
     /* Android opens no file manager on a folder: the toast says where the saves are, from the shared storage's root, as
-     * a computer sees it over USB. */
+     * a computer sees it over USB, as the page shows it. */
     (void)error;
-    const char *shown = strstr(folder, "Android/data/");
-    snprintf(message, capacity, "Saves are in %s, reachable over USB", shown ? shown : folder);
+    char shown[ORACLES_SETTINGS_PATH_LENGTH];
+    oracles_page_folder(1, folder, shown, sizeof shown);
+    snprintf(message, capacity, "Saves are in %s, reachable over USB", shown);
 #else
     if (oracles_open_folder(folder[0] ? folder : ".", error, sizeof error) != 0) snprintf(message, capacity, "The folder does not open: %s", error);
 #endif
@@ -509,7 +510,9 @@ static void open_mods(void *opaque, char *message, size_t capacity)
     if (!SDL_CreateDirectory(folder)) { snprintf(message, capacity, "The mods folder cannot be made: %s", SDL_GetError()); return; }
 #ifdef __ANDROID__
     (void)error;
-    snprintf(message, capacity, "Mods go in %s", folder);
+    char shown[ORACLES_SETTINGS_PATH_LENGTH];
+    oracles_page_folder(1, folder, shown, sizeof shown);
+    snprintf(message, capacity, "Mods go in %s, reachable over USB", shown);
 #else
     if (oracles_open_folder(folder, error, sizeof error) != 0) snprintf(message, capacity, "The folder does not open: %s", error);
 #endif

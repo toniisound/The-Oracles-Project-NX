@@ -89,8 +89,8 @@ static void log_stderr(void)
 
 /* A line of the Android activity's (OraclesActivity) for the log: the Java runtime's standard error is a copy of the
  * process's taken before the redirection above, so that its lines would not reach the log. */
-JNIEXPORT void JNICALL Java_io_github_thibautbus_theoraclesproject_OraclesActivity_nativeLog(JNIEnv *env, jclass class, jstring line);
-JNIEXPORT void JNICALL Java_io_github_thibautbus_theoraclesproject_OraclesActivity_nativeLog(JNIEnv *env, jclass class, jstring line)
+JNIEXPORT void JNICALL Java_org_theoraclesproject_OraclesActivity_nativeLog(JNIEnv *env, jclass class, jstring line);
+JNIEXPORT void JNICALL Java_org_theoraclesproject_OraclesActivity_nativeLog(JNIEnv *env, jclass class, jstring line)
 {
     (void)class;
     const char *chars = line ? (*env)->GetStringUTFChars(env, line, NULL) : NULL;
@@ -256,6 +256,12 @@ static void load_settings(oracles_settings *prefs, const OraclesSessionOptions *
     if (!o->no_window) {
         char dir[ORACLES_SETTINGS_PATH_LENGTH - 16];
         if (oracles_sdl_settings_dir(dir, sizeof dir)) snprintf(prefs->path, sizeof prefs->path, "%ssettings.txt", dir);
+#ifdef __ANDROID__
+        /* The mods in the application's folder on the shared storage, beside the ROMs' copies, reachable over USB:
+         * settings.txt's folder is private. */
+        const char *shared = SDL_GetAndroidExternalStoragePath();
+        if (shared && prefs->path[0]) snprintf(prefs->mods_path, sizeof prefs->mods_path, "%s/mods", shared);
+#endif
     }
     oracles_settings_load(prefs);
     oracles_home_resolve_menu_pad(prefs);

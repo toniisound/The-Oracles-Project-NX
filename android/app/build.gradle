@@ -53,7 +53,8 @@ if (!describe) {
 
 // The product's version, config/version.json's, the same on every platform and raised at each release; the version code
 // Android compares to update an installed application follows it, MAJOR * 10000 + MINOR * 100 + PATCH (1.0.0 is 10000),
-// so that a release installs over the one before and builds between two releases over one another.
+// so that a release installs over the one before and builds between two releases over one another.  The application id
+// is org.theoraclesproject since 1.2.0, a new application, which installs beside 1.1.0 rather than over it (CHANGELOG.md).
 def productVersion = new groovy.json.JsonSlurper().parse(new File(repository, "config/version.json")).version
 def versionParts = productVersion.tokenize(".").collect { it.toInteger() }
 if (versionParts.size() != 3 || versionParts[1] > 99 || versionParts[2] > 99) {
@@ -84,12 +85,12 @@ def copyLicences = tasks.register("copyLicences", Copy) {
 def keystore = System.getenv("ORACLES_KEYSTORE")
 
 android {
-    namespace "io.github.thibautbus.theoraclesproject"
+    namespace "org.theoraclesproject"
     compileSdk 36
     ndkVersion "29.0.14206865"
 
     defaultConfig {
-        applicationId "io.github.thibautbus.theoraclesproject"
+        applicationId "org.theoraclesproject"
         minSdk 29
         targetSdk 36
         versionCode productVersionCode + (defaultCore == "mgba" ? 1 : 0)

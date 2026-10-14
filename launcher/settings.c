@@ -196,7 +196,11 @@ static void beside(const oracles_settings *s, const char *name, char *out, size_
     snprintf(out, capacity, "%.*s%s", (int)(slash - s->path + 1), s->path, name);
 }
 
-void oracles_settings_mods_folder(const oracles_settings *s, char *out, size_t capacity) { beside(s, "mods", out, capacity); }
+void oracles_settings_mods_folder(const oracles_settings *s, char *out, size_t capacity)
+{
+    if (s->mods_path[0]) snprintf(out, capacity, "%s", s->mods_path);
+    else beside(s, "mods", out, capacity);
+}
 
 void oracles_settings_language_pack(const oracles_settings *s, OraclesSettingsGame g, char *out, size_t capacity)
 {

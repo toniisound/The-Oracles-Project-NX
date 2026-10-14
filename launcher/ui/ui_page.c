@@ -62,12 +62,12 @@ static void game_texts(const OraclesHomeNav *nav, OraclesUiGameTexts *t, char *s
     t->title = oracles_home_title(hero);
     t->state = state;
     snprintf(t->rom_file, sizeof t->rom_file, "%s", oracles_page_rom_file(game));
-    snprintf(t->rom_folder, sizeof t->rom_folder, "%s", game->rom_file[0] ? game->rom_folder : "");
+    oracles_page_folder(nav->android, game->rom_file[0] ? game->rom_folder : "", t->rom_folder, sizeof t->rom_folder);
     oracles_page_rom_status(game, t->rom_status, sizeof t->rom_status, &tones->rom);
     t->patched = game->fan != NULL;
     if (game->fan) {
         snprintf(t->patch_file, sizeof t->patch_file, "%s", oracles_page_patch_file(game));
-        snprintf(t->patch_folder, sizeof t->patch_folder, "%s", game->patch_file[0] ? game->patch_folder : "");
+        oracles_page_folder(nav->android, game->patch_file[0] ? game->patch_folder : "", t->patch_folder, sizeof t->patch_folder);
         oracles_page_patch_status(game, t->patch_status, sizeof t->patch_status, &tones->patch);
         oracles_page_image_status(game, t->image_status, sizeof t->image_status, &tones->image);
     }
@@ -79,7 +79,7 @@ static void game_texts(const OraclesHomeNav *nav, OraclesUiGameTexts *t, char *s
     t->european = oracles_page_eu_shown(game);
     if (t->european) {
         snprintf(t->eu_file, sizeof t->eu_file, "%s", oracles_page_eu_file(game));
-        snprintf(t->eu_folder, sizeof t->eu_folder, "%s", game->eu != ORACLES_ROM_NONE ? game->eu_folder : "");
+        oracles_page_folder(nav->android, game->eu != ORACLES_ROM_NONE ? game->eu_folder : "", t->eu_folder, sizeof t->eu_folder);
         oracles_page_eu_status(nav, t->eu_status, sizeof t->eu_status, &tones->eu);
         t->eu_buttons = oracles_page_eu_buttons(game, t->eu_button_labels);
     }
@@ -446,7 +446,7 @@ void oracles_ui_mods_draw(OraclesUiDraw *draw, const OraclesHomeNav *nav, Oracle
     highlight(draw, lk, &l.folder_row, row == ORACLES_MODS_ROW_FOLDER);
     if (l.folder_lines.count) wrapped(draw, st->row_path, &l.folder_lines, oracles_ui_rgb(MODS_PATH));
     else text(draw, st->row_path, &l.folder_path, l.folder_text, oracles_ui_rgb(MODS_PATH));
-    text(draw, st->row_text, &l.folder_line, oracles_mods_folder_line, oracles_ui_rgb(NOTE));
+    text(draw, st->row_text, &l.folder_line, oracles_mods_folder_line(nav), oracles_ui_rgb(NOTE));
     const OraclesUiColor folder_button = row == ORACLES_MODS_ROW_FOLDER ? accent : oracles_ui_rgb(BUTTON);
     text(draw, st->row_button, &l.folder_button, "Open folder", folder_button);
     text(draw, st->row_button, &l.folder_button_dot, oracles_ui_item_dot, folder_button);

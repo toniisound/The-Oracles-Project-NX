@@ -69,7 +69,7 @@ The debug APK is signed with the repository's debug key (`android/debug.keystore
 
 ```bash
 adb install -r android/build-apk/the-oracles-project-debug.apk
-adb shell am start -n io.github.thibautbus.theoraclesproject/.OraclesActivity
+adb shell am start -n org.theoraclesproject/.OraclesActivity
 ```
 
 The launcher's standard error, the session report included, goes to Android's log, `adb logcat -s the-oracles-project`, and to `the-oracles-project.log` in the application's folder on the shared storage ([PLAYING.md](PLAYING.md#android)).
@@ -98,7 +98,7 @@ make check DISASM=/path/to/oracles-disasm ROM_AGES=/path/to/ages.gbc ROM_SEASONS
 
 ## Releasing
 
-The product's version is in `config/version.json`, the same on every platform, and changes only at a release. To release: change that file (`1.0.0` to `1.1.0`), commit, tag the commit `vX.Y.Z` and push the tag. A build of that commit shows `v1.1.0`; any other shows its commit's short hash beside it, `v1.1.0 (be8571e)`, and CMake warns when a release tag does not match the file. On Android the `versionCode` that decides updates follows it, `MAJOR x 10000 + MINOR x 100 + PATCH` plus one for the application on mGBA, Android's default (10001 for 1.0.0, 10000 for one built on SameBoy): a release installs over the one before, and builds between two releases over one another. The file's `repository`, `thibautbus/top`, is the public repository whose latest release the launcher's update check asks GitHub for (`launcher/update_check.h`): a rename of that repository changes that line.
+The product's version is in `config/version.json`, the same on every platform, and changes only at a release. To release: change that file (`1.0.0` to `1.1.0`), commit, tag the commit `vX.Y.Z` and push the tag. A build of that commit shows `v1.1.0`; any other shows its commit's short hash beside it, `v1.1.0 (be8571e)`, and CMake warns when a release tag does not match the file. On Android the `versionCode` that decides updates follows it, `MAJOR x 10000 + MINOR x 100 + PATCH` plus one for the application on mGBA, Android's default (10001 for 1.0.0, 10000 for one built on SameBoy): a release installs over the one before, and builds between two releases over one another. The application's identifier is `org.theoraclesproject` since 1.2.0, a new application on Android, which installs beside 1.1.0 rather than over it ([CHANGELOG.md](../CHANGELOG.md)). The file's `repository`, `thibautbus/top`, is the public repository whose latest release the launcher's update check asks GitHub for (`launcher/update_check.h`): a rename of that repository changes that line.
 
 Pushing the tag starts the `Release` workflow (`.github/workflows/release.yml`). It checks the tag against `config/version.json`, builds every platform in Release with warnings as errors (the tests are the CI's, run on the same commit), and publishes a GitHub Release of the tag with five files, which players download with their own ROM:
 

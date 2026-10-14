@@ -3,12 +3,18 @@
 #include <stdio.h>
 #include <string.h>
 
-const char oracles_mods_folder_line[] = "Beside the launcher\xe2\x80\x99s settings \xc2\xb7 one folder per mod";
 const char oracles_mods_empty[] = "No mods found. Put each mod in its own folder inside the mods folder, named with a\xe2\x80\x93z, 0\xe2\x80\x93" "9, - and _, "
                                   "with a main.lua in it.";
 const char oracles_mods_note[] = "A game with mods plays on its own save, NAME.mods.sav beside the ROM, copied from the game's save the first time; "
                                  "the save without mods is never written by a game with mods.";
 const char oracles_mods_limit[] = "Eight mods at most play together";
+
+void oracles_mods_folder(const OraclesHomeNav *nav, char *out, size_t capacity) { oracles_page_folder(nav->android, nav->mods_folder, out, capacity); }
+
+const char *oracles_mods_folder_line(const OraclesHomeNav *nav)
+{
+    return nav->android ? "Reachable over USB \xc2\xb7 one folder per mod" : "Beside the launcher\xe2\x80\x99s settings \xc2\xb7 one folder per mod";
+}
 
 /* The page's game: an Oracle, the one the menu showed (a fan game's menu greys Mods). */
 static int mods_game(const OraclesHomeNav *nav)

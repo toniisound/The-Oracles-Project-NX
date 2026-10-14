@@ -805,9 +805,11 @@ static void mods_16_9(const OraclesHomeNav *nav, OraclesUiModsLayout *out)
     float inner_y = y + ROW_PAD_Y;
     button("Open folder", right, 0.0f, 0.0f, &out->folder_button, &out->folder_button_dot);
     const float room = inner_w - ROW_GAP - (out->folder_button_dot.x + out->folder_button_dot.w - out->folder_button.x);
-    oracles_ui_fit(&oracles_ui_row_path, nav->mods_folder, room, out->folder_text, sizeof out->folder_text);
+    char folder[sizeof out->folder_text];
+    oracles_mods_folder(nav, folder, sizeof folder);
+    oracles_ui_fit(&oracles_ui_row_path, folder, room, out->folder_text, sizeof out->folder_text);
     out->folder_path = line_at(&oracles_ui_row_path, out->folder_text, inner_x, inner_y, 0.0f);
-    out->folder_line = line_at(&oracles_ui_row_text, oracles_mods_folder_line, inner_x, out->folder_path.y + out->folder_path.h + FILE_GAP, 0.0f);
+    out->folder_line = line_at(&oracles_ui_row_text, oracles_mods_folder_line(nav), inner_x, out->folder_path.y + out->folder_path.h + FILE_GAP, 0.0f);
     const float content = out->folder_line.y + out->folder_line.h - inner_y;
     button("Open folder", right, inner_y, content, &out->folder_button, &out->folder_button_dot);
     out->folder_row = box(value_x, y, value_w, content + 2.0f * ROW_PAD_Y);
@@ -1315,7 +1317,9 @@ static void mods_4_3(const OraclesHomeNav *nav, OraclesUiModsLayout *out)
     /* Folder: its path, broken anywhere on two lines at most, and where it is; Open folder at the right. */
     const float room = file_room_4_3(VALUE_X_4_3, place_button_4_3("Open folder", &out->folder_button, &out->folder_button_dot));
     out->label_folder = line_at(&oracles_ui_row_label_4_3, "Folder", LEFT_4_3, 0.0f, 0.0f);
-    wrap_anywhere(&oracles_ui_row_path_4_3, nav->mods_folder, room, MODS_FOLDER_LINES_4_3, VALUE_X_4_3, 0.0f, &out->folder_lines);
+    char folder[sizeof out->folder_text];
+    oracles_mods_folder(nav, folder, sizeof folder);
+    wrap_anywhere(&oracles_ui_row_path_4_3, folder, room, MODS_FOLDER_LINES_4_3, VALUE_X_4_3, 0.0f, &out->folder_lines);
     snprintf(out->folder_text, sizeof out->folder_text, "%s", out->folder_lines.count ? out->folder_lines.text[0] : "");
     OraclesUiLine path = line_at(&oracles_ui_row_path_4_3, out->folder_text, VALUE_X_4_3, 0.0f, 0.0f);
     const float path_line = path.h;
@@ -1324,7 +1328,7 @@ static void mods_4_3(const OraclesHomeNav *nav, OraclesUiModsLayout *out)
     const float first_bottom = baseline_row(first, 4, y + ROW_PAD_Y_4_3);
     for (unsigned i = 0; i < out->folder_lines.count; i++) move_line(&out->folder_lines.lines[i], VALUE_X_4_3, path.y + (float)i * path_line);
     out->folder_path = out->folder_lines.count ? out->folder_lines.lines[0] : path;
-    out->folder_line = line_at(&oracles_ui_row_text_4_3, oracles_mods_folder_line, VALUE_X_4_3, first_bottom + GRID_ROW_GAP_4_3, 0.0f);
+    out->folder_line = line_at(&oracles_ui_row_text_4_3, oracles_mods_folder_line(nav), VALUE_X_4_3, first_bottom + GRID_ROW_GAP_4_3, 0.0f);
     out->folder_row = row_4_3(y, out->folder_line.y + out->folder_line.h);
     y += out->folder_row.h + ROW_GAP_4_3;
 

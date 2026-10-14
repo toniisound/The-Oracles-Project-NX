@@ -60,6 +60,8 @@ extern const char *const oracles_settings_language_names[ORACLES_SETTINGS_LANGUA
 
 typedef struct oracles_settings {
     char path[ORACLES_SETTINGS_PATH_LENGTH];   /* empty when no settings directory is available */
+    char mods_path[ORACLES_SETTINGS_PATH_LENGTH];   /* the mods folder where it is not beside settings.txt (Android's, on the
+                                                     * shared storage), else empty */
     int colour_correction;        /* on by default */
     char vsync[8];                /* auto, on, off */
     int camera;                   /* the Enhanced camera profile: 1 or 2 */
@@ -181,7 +183,8 @@ OraclesHotkeysMode oracles_settings_hotkeys_mode(const char *text);
 size_t oracles_settings_mod_names(const char *list, char names[][ORACLES_SETTINGS_MOD_NAME], size_t capacity);
 int oracles_settings_mod_active(const char *list, const char *name);
 int oracles_settings_mod_set(char list[ORACLES_SETTINGS_MODS_LENGTH], const char *name, int on);
-/* The mods folder: mods beside settings.txt, one folder per mod; empty when there is no settings directory. */
+/* The mods folder, one folder per mod: mods_path when set, else mods beside settings.txt; empty when there is no
+ * settings directory. */
 void oracles_settings_mods_folder(const oracles_settings *settings, char *out, size_t capacity);
 /* The language pack of game `g`, extracted from its European ROM at its first game in a language and read after:
  * language-ages.pack or language-seasons.pack beside settings.txt; empty when there is no settings directory. */

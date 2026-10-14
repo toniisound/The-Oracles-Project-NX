@@ -9,7 +9,7 @@
   <key>CFBundleIconFile</key>
   <string>the-oracles-project</string>
   <key>CFBundleIdentifier</key>
-  <string>io.github.thibautbus.theoraclesproject</string>
+  <string>org.theoraclesproject</string>
   <key>CFBundleName</key>
   <string>The Oracles Project</string>
   <key>NSHighResolutionCapable</key>

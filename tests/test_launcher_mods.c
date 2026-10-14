@@ -6,7 +6,8 @@
  * (a mod refused) and 10m (none), at 1440x1080; a text is compared by its
  * left, its width, its line box and its baseline, an element by its box.
  * Past six mods (three in 4:3), the list shows those around the highlighted
- * row. */
+ * row.  On Android the folder shows from its Android/data, reachable over
+ * USB. */
 #include "layout_reference.h"
 #include "ui_page_layout.h"
 #include "ui_page_nav.h"
@@ -248,6 +249,49 @@ static void frame_10l_10m(void)
     for (unsigned i = 0; i < 2; i++) CHECK(l.folder_lines.lines[i].x + l.folder_lines.lines[i].w <= l.folder_button.x - 24.0f + LAYOUT_TOLERANCE);
 }
 
+/* On Android, the mods folder on the shared storage, from its Android/data as a computer sees it over USB, and the line
+ * under it saying so: in 16:9 on one line, in the row, its line, Open folder and the list where the reference's desktop
+ * path has them; in 4:3 the whole path in its lines, the line under them. */
+static void android_folder(void)
+{
+    static const char shared[] = "Android/data/org.theoraclesproject/files/mods";
+    OraclesHomeNav nav;
+    OraclesUiModsLayout desktop, android;
+    char shown[ORACLES_HOME_TEXT_LENGTH * 4];
+    page(&nav, ORACLES_HOME_GAME_AGES, 0, ORACLES_MODS_ROW_FOLDER);
+    oracles_ui_layout_mods(ORACLES_UI_LAYOUT_16_9, &nav, &desktop);
+    oracles_mods_folder(&nav, shown, sizeof shown);
+    CHECK(!strcmp(shown, nav.mods_folder));
+    CHECK(!strcmp(oracles_mods_folder_line(&nav), "Beside the launcher\xe2\x80\x99s settings \xc2\xb7 one folder per mod"));
+    snprintf(nav.mods_folder, sizeof nav.mods_folder, "/storage/emulated/0/%s", shared);
+    nav.android = 1;
+    oracles_mods_folder(&nav, shown, sizeof shown);
+    CHECK(!strcmp(shown, shared));
+    CHECK(!strcmp(oracles_mods_folder_line(&nav), "Reachable over USB \xc2\xb7 one folder per mod"));
+    oracles_ui_layout_mods(ORACLES_UI_LAYOUT_16_9, &nav, &android);
+    CHECK(!strcmp(android.folder_text, shared));
+    CHECK(android.folder_path.x == desktop.folder_path.x && android.folder_path.y == desktop.folder_path.y
+          && android.folder_path.h == desktop.folder_path.h && android.folder_path.baseline == desktop.folder_path.baseline);
+    CHECK(android.folder_line.x == desktop.folder_line.x && android.folder_line.y == desktop.folder_line.y);
+    CHECK(!memcmp(&android.folder_row, &desktop.folder_row, sizeof desktop.folder_row));
+    CHECK(!memcmp(&android.folder_button, &desktop.folder_button, sizeof desktop.folder_button));
+    CHECK(!memcmp(&android.list, &desktop.list, sizeof desktop.list));
+
+    nav.android = 0;
+    page(&nav, ORACLES_HOME_GAME_AGES, 0, ORACLES_MODS_ROW_FOLDER);
+    oracles_ui_layout_mods(ORACLES_UI_LAYOUT_4_3, &nav, &desktop);
+    snprintf(nav.mods_folder, sizeof nav.mods_folder, "/storage/emulated/0/%s", shared);
+    nav.android = 1;
+    oracles_ui_layout_mods(ORACLES_UI_LAYOUT_4_3, &nav, &android);
+    char joined[ORACLES_HOME_TEXT_LENGTH * 4] = "";
+    for (unsigned i = 0; i < android.folder_lines.count; i++) strcat(joined, android.folder_lines.text[i]);
+    CHECK(android.folder_lines.count >= 1 && android.folder_lines.count <= 2 && !strcmp(joined, shared));
+    CHECK(android.folder_path.x == desktop.folder_path.x && android.folder_path.baseline == desktop.folder_path.baseline);
+    CHECK(!memcmp(&android.folder_button, &desktop.folder_button, sizeof desktop.folder_button));
+    const OraclesUiLine *last = &android.folder_lines.lines[android.folder_lines.count - 1];
+    CHECK(android.folder_line.x == desktop.folder_line.x && android.folder_line.y >= last->y + last->h);
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2 || !layout_reference_load(argv[1])) { fprintf(stderr, "usage: oracles-test-launcher-mods launcher_layout_reference.json\n"); return 2; }
@@ -258,6 +302,7 @@ int main(int argc, char **argv)
     frame_8d();
     many();
     frame_10l_10m();
+    android_folder();
     if (layout_failures()) { fprintf(stderr, "%d failure(s)\n", layout_failures()); return 1; }
     printf("launcher mods: the page matches the layout reference within %.1f px in both layouts\n", (double)LAYOUT_TOLERANCE);
     return 0;

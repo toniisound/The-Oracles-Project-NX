@@ -1525,6 +1525,33 @@ static int ellipses(const char *text)
 
 /* A folder longer than its field keeps its end, the part a player recognises; the page elides it once, in its middle,
  * whole characters, and quickly even when long. */
+/* On Android, a folder on the shared storage shows from its Android/data, one of the application's private files is
+ * named. */
+static void android_folders(void)
+{
+    static const char *const cases[][2] = {
+        { "/storage/emulated/0/Android/data/org.theoraclesproject/files/roms", "Android/data/org.theoraclesproject/files/roms" },
+        { "/storage/emulated/0/Android/data/org.theoraclesproject/files/patches", "Android/data/org.theoraclesproject/files/patches" },
+        { "/data/data/org.theoraclesproject/files/mods", "App storage \xe2\x80\xba mods" },
+        { "/data/user/0/org.theoraclesproject/files/mods/claw-game", "App storage \xe2\x80\xba mods \xe2\x80\xba claw-game" },
+        { "/data/data/org.theoraclesproject/files", "App storage" },
+        { "/storage/emulated/0/Download", "/storage/emulated/0/Download" },
+        { "/data/data/org.theoraclesproject/cache", "/data/data/org.theoraclesproject/cache" },
+        { "/data/data/org.theoraclesproject/filesystem", "/data/data/org.theoraclesproject/filesystem" },
+        { "", "" },
+    };
+    char out[ORACLES_HOME_TEXT_LENGTH * 4];
+    for (size_t i = 0; i < sizeof cases / sizeof cases[0]; i++) {
+        oracles_page_folder(1, cases[i][0], out, sizeof out);
+        CHECK(!strcmp(out, cases[i][1]));
+        oracles_page_folder(0, cases[i][0], out, sizeof out);
+        CHECK(!strcmp(out, cases[i][0]));
+    }
+    char small[20];
+    oracles_page_folder(1, cases[1][0], small, sizeof small);
+    CHECK(strlen(small) < sizeof small && !strncmp(small, "Android/data", 12));
+}
+
 static void long_paths(void)
 {
     static char path[3200], field[ORACLES_HOME_TEXT_LENGTH * 4], fitted[ORACLES_HOME_TEXT_LENGTH * 4];
@@ -2589,6 +2616,7 @@ int main(int argc, char **argv)
     display_2q();
     display_2m();
     long_paths();
+    android_folders();
     display_navigation();
     layout_10d();
     layout_10e();
