@@ -38,7 +38,7 @@ macOS, Windows (MSYS2) and Android are in [`docs/BUILDING.md`](docs/BUILDING.md)
 
 No ROM, no asset of the games, no data decompressed from a ROM, no code of the games. You provide your own ROM of Oracle of Ages or Oracle of Seasons (US); a fan game needs that ROM and the game's own BPS patch. The addresses and symbol names the host uses come from the [oracles-disasm](https://github.com/Stewmath/oracles-disasm) disassembly, at the commit pinned in `config/disasm.json`, through tables generated from its symbol files; the CI audits that no ROM byte enters the repository. Tests that need a ROM are skipped without one, never simulated.
 
-The port recognises these files by their SHA-1:
+The port recognises these files by their SHA-1; a patch's is the file as its authors distribute it (the port checks the image it makes):
 
 | File you provide | Expected SHA-1 |
 |---|---|
