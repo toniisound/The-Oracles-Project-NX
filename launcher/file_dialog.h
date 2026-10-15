@@ -30,6 +30,9 @@ typedef enum OraclesDialogKind {
  * thread the system answers on. */
 void oracles_choose_file(struct SDL_Window *window, OraclesDialogKind kind, const char *folder, int game);
 
+/* Answers as a dialog would, at once: the answer comes as an event of SDL's queue (the Switch, which has no dialog). */
+void oracles_dialog_post(OraclesDialogKind kind, int game, OraclesDialogResult result, const char *path);
+
 /* 1 when `event` is a dialog's answer: its result, the kind and the game it was opened for and the path chosen (empty
  * unless CHOSEN), *copied set when that path is a copy made for this answer (Android), which the caller removes if it
  * refuses the file; the answer's memory is released.  0 for any other event. */

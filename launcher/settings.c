@@ -112,7 +112,7 @@ int oracles_settings_default_subpixel_camera(int fullscreen_only) { return !full
 int oracles_settings_subpixel_camera(const oracles_settings *s)
 {
     if (s->subpixel_camera >= 0) return s->subpixel_camera != 0;
-#ifdef __ANDROID__
+#if defined(__ANDROID__) || defined(__SWITCH__)   /* the devices' default: the whole-pixel camera, lighter */
     return oracles_settings_default_subpixel_camera(1);
 #else
     return oracles_settings_default_subpixel_camera(0);

@@ -83,6 +83,11 @@ endif()
 # files on disk, which the engine never gives the core) and its 16-bit colour (the engine takes 32 bits): the Game Boy
 # core alone, no threads (the engine runs each core on one thread), no video logger, no configuration overrides.
 target_compile_definitions(mgba PUBLIC M_CORE_GB MINIMAL_CORE=2 DISABLE_THREADING BUILD_STATIC ${MGBA_FUNCTION_DEFINES})
+if(NINTENDO_SWITCH)
+    # libnx has no mmap: the core's memory from the heap.  newlib declares strtof_l and its locale functions for
+    # _GNU_SOURCE only, which the check above finds in the library all the same.
+    target_compile_definitions(mgba PRIVATE DISABLE_ANON_MMAP _GNU_SOURCE)
+endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR (WIN32 AND NOT MSVC))   # as mGBA's own build
     target_compile_definitions(mgba PRIVATE _GNU_SOURCE)
 endif()

@@ -151,6 +151,22 @@ void oracles_choose_file(struct SDL_Window *window, OraclesDialogKind kind, cons
     SDL_DestroyProperties(properties);
 }
 
+void oracles_dialog_post(OraclesDialogKind kind, int game, OraclesDialogResult result, const char *path)
+{
+    if (!answer_event) answer_event = SDL_RegisterEvents(1);
+    dialog_answer *answer = SDL_calloc(1, sizeof *answer);
+    if (!answer) return;
+    answer->kind = kind;
+    answer->game = game;
+    answer->result = result;
+    answer->path = path && path[0] ? SDL_strdup(path) : NULL;
+    SDL_Event e;
+    SDL_zero(e);
+    e.type = answer_event;
+    e.user.data1 = answer;
+    if (!answer_event || !SDL_PushEvent(&e)) { SDL_free(answer->path); SDL_free(answer); }
+}
+
 int oracles_dialog_answer(const union SDL_Event *event, OraclesDialogResult *result, OraclesDialogKind *kind, int *game,
                           char *path, size_t capacity, int *copied)
 {

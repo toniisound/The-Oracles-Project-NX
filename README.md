@@ -1,114 +1,139 @@
-# The Oracles Project
+# The Oracles Project NX
 
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+A Nintendo Switch homebrew port (`.nro`) of [The Oracles Project](https://github.com/thibautbus/top) by
+**thibautbus**: a faithful, moddable port of **Oracle of Ages** and **Oracle of Seasons**. Your own ROM runs
+unmodified in an emulator core (mGBA's, or SameBoy), and a native host around it presents the game:
 
-A faithful, moddable port of Oracle of Ages and Oracle of Seasons for PC, macOS and Android. Your own ROM runs in an emulator core, [SameBoy](https://sameboy.github.io/), unmodified, the accurate reference, or [mGBA](https://mgba.io/)'s Game Boy core, lighter, for small devices (Display's Core); around it, a native host observes the game and presents it:
+- **Faithful** (160×144) or **Enhanced**: a widescreen view with the neighbouring rooms, a smooth camera and the
+  status bar in a band of its own
+- **Languages**: Spanish, French, German, Italian and European English, taken from your European ROM
+- **Gameplay options**: continuous transitions, item hotkeys, hold-to-swim and a drawn-back view
+- **Lua mods** and **fan games** (Gifts of Kinomi, Moonrise Regalia, Temple of Seasons) from their BPS patches
+- Save states, remappable controls, full screen in handheld (720p) and docked (1080p)
 
-- **Faithful**: the original image, 160x144, exactly what the game draws;
-- **Enhanced**: a widescreen view with the neighbouring rooms, which the game itself computes in a second instance of the core, a smooth camera, and the status bar repositioned in a band of its own;
-- **gameplay options**: continuous transitions (Link keeps walking through the scrolling transitions), item hotkeys (four keys that use or equip an item without the menu), swimming with a button held rather than tapped (the flippers' A, Ages' mermaid suit), and a drawn-back view that shows three rooms across and two down outdoors;
-- **Lua mods**: houses, characters who talk and minigames, which act on the game through the game's own routines and replay exactly;
-- **fan games** from their BPS patch, applied in memory to your ROM:
-  - Gifts of Kinomi 1.1.2, built on Oracle of Ages;
-  - Moonrise Regalia 1.0.6, built on Oracle of Ages;
-  - Temple of Seasons 1.073, built on Oracle of Seasons.
-
-Nothing of the game's code is rewritten: the game runs as it is, and the host reads its state. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) says why.
-
-## Quick start
-
-On Linux, with a C11 compiler, CMake 3.19 or later and the development packages SDL 3 builds against (or an installed SDL 3):
-
-```bash
-cmake -S . -B build -DBUILD_TESTING=ON
-cmake --build build --parallel
-ctest --test-dir build --output-on-failure
-```
-
-Then run the launcher, and choose your ROM on its Cartridge page, or start a game directly:
-
-```bash
-build/the-oracles-project
-build/the-oracles-project --rom "/path/to/Oracle of Ages.gbc" --enhanced
-```
-
-macOS, Windows (MSYS2) and Android are in [`docs/BUILDING.md`](docs/BUILDING.md); the launcher, the options, the keys and the settings in [`docs/PLAYING.md`](docs/PLAYING.md).
-
-## What this repository does not contain
-
-No ROM, no asset of the games, no data decompressed from a ROM, no code of the games. You provide your own ROM of Oracle of Ages or Oracle of Seasons (US); a fan game needs that ROM and the game's own BPS patch. The addresses and symbol names the host uses come from the [oracles-disasm](https://github.com/Stewmath/oracles-disasm) disassembly, at the commit pinned in `config/disasm.json`, through tables generated from its symbol files; the CI audits that no ROM byte enters the repository. Tests that need a ROM are skipped without one, never simulated.
-
-The port recognises these files by their SHA-1; a patch's is the file as its authors distribute it (the port checks the image it makes):
-
-| File you provide | Expected SHA-1 |
-|---|---|
-| Oracle of Ages (US) | `880374fb978b18af4aa529e2e32f7ffb4d7dd2f4` |
-| Oracle of Seasons (US) | `ba1268290fb2b1b70505d2d7b5825fc8a4816a4b` |
-| Oracle of Ages (EU), for the languages | `9f2dff3c46406839f839a8d535353dfc1e3e8670` |
-| Oracle of Seasons (EU), for the languages | `360b9408e569ba826212eac1ebea1b09573cb48c` |
-| Gifts of Kinomi 1.1.2 patch (`.bps`), on Ages (US) | `bb0837fd2c62a8b3ea05da22ed6049ab57cfa1e2` |
-| Moonrise Regalia 1.0.6 patch (`.bps`), on Ages (US) | `fcef50de31ce3e57d3e23cd846c0749e42098e08` |
-| Temple of Seasons 1.073 patch (`.bps`), on Seasons (US) | `0646e0a8fd6830198e453fdfeeea4a0a7c01cdf4` |
-
-## Platforms
-
-- Linux and macOS (Intel and Apple Silicon), with SDL 3;
-- Windows, built with MSYS2 UCRT64;
-- Android 10 and later (`arm64-v8a`, `x86_64`), with touch controls, the same launcher and the same options.
-
-The CI builds and tests all four on every pull request.
-
-## Documentation
-
-| Document | For |
-| --- | --- |
-| [`docs/BUILDING.md`](docs/BUILDING.md) | building on each platform, the options, the tests, releasing |
-| [`docs/PLAYING.md`](docs/PLAYING.md) | the launcher, the fan games, the command line, the profiles and options, the settings |
-| [`docs/MODDING.md`](docs/MODDING.md) | writing a mod in Lua |
-| [`docs/ROUTES.md`](docs/ROUTES.md) | recorded routes, the differential harness, the route suite |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | the layers, the rules between them, the SameBoy strategy |
-| [`docs/GAME_HOOKS.md`](docs/GAME_HOOKS.md) | what the host hooks in the game and where it may write |
-| [`docs/ROM_DATA_FORMATS.md`](docs/ROM_DATA_FORMATS.md) | the formats of the ROM's data |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | the rules of the code and of a change |
-
-## AI-assisted development
-
-This repository was developed with AI assistance. Every change, whoever writes it, is held by the same checks: the tests the CI runs without a ROM, the route suite replayed on the games with its run hashes kept, the text and boundary checks, and a review before it is merged.
+> **No game files are included.** You need your own Oracle of Ages / Oracle of Seasons (US) ROMs. This project is not
+> affiliated with or endorsed by Nintendo.
 
 ## Credits
 
-- [oracles-disasm](https://github.com/Stewmath/oracles-disasm), the disassembly of both games by Stewmath and its contributors: the addresses and symbol names the host reads and hooks are generated from its symbol files.
-- [SameBoy](https://sameboy.github.io/) by Lior Halphon: the emulator core the game runs in, unmodified, the accurate one.
-- [mGBA](https://mgba.io/) by Vicki Pfau and its contributors: the lighter core the game can run in, for small devices.
-- The fan games the port recognises, and their authors:
-  - Gifts of Kinomi, by ZerotoKoops, Stewmath, Gamma and Ralfaro;
-  - Moonrise Regalia, by PontiusStone;
-  - Temple of Seasons, by Jay (like the bird, not the letter) and Ralfaro.
+- **[thibautbus](https://github.com/thibautbus)** and contributors: [The Oracles Project](https://github.com/thibautbus/top), the port itself, its launcher, the Enhanced view, languages, mods and fan-game support. All the real work is theirs.
+- **[Stewmath](https://github.com/Stewmath)** and contributors: [oracles-disasm](https://github.com/Stewmath/oracles-disasm), the disassembly the port's tables come from.
+- **[mGBA](https://mgba.io)** (Vicki Pfau and contributors) and **[SameBoy](https://sameboy.github.io)** (Lior Halphon): the emulator cores.
+- **[devkitPro](https://devkitpro.org)**: devkitA64, libnx and the Switch branch of **[SDL](https://libsdl.org)** 3.
+- **[Lua](https://www.lua.org)**: the mods' runtime.
+- The fan games' authors: ZerotoKoops, Stewmath, Gamma and Ralfaro (Gifts of Kinomi), PontiusStone (Moonrise Regalia), Jay and Ralfaro (Temple of Seasons).
+- **Toniisound**: Nintendo Switch port.
 
-## Licence
+## License
 
-The port is under the MIT licence ([`LICENSE`](LICENSE)). It vendors or embeds, each under its own licence, shipped with the binaries:
+MIT, the same as The Oracles Project. See [LICENSE](LICENSE). The bundled libraries keep their own licences, which
+ship with the release. The upstream README is kept as [README-original.md](README-original.md).
 
-- [SameBoy](third_party/sameboy/) (Expat/MIT), the emulator core;
-- [mGBA](third_party/mgba/)'s Game Boy core (Mozilla Public License 2.0), with one patch, and the [inih](third_party/mgba/core/src/third-party/inih/) it uses (BSD 3-Clause), the lighter emulator core;
-- [Lua](third_party/lua/) (MIT), the mods' runtime;
-- [SDL 3](https://libsdl.org/) (zlib), built from the release pinned in `config/sdl3.json`;
-- [stb_truetype](third_party/stb/) (MIT or public domain) and [NanoSVG](third_party/nanosvg/) (zlib), the launcher's text and motifs;
-- the fonts [Marcellus](third_party/fonts/marcellus/), [Alegreya Sans](third_party/fonts/alegreya-sans/) and [JetBrains Mono](third_party/fonts/jetbrains-mono/) (SIL Open Font Licence);
-- the Gradle wrapper of the Android build (Apache 2.0).
+## Technical overview
 
-Oracle of Ages and Oracle of Seasons are Nintendo's; this project is not affiliated with Nintendo. The fan games are their authors'.
+The Switch build is the upstream launcher with a libnx target. SDL 3 is built from source (devkitPro's
+`switch-sdl-3.4` branch) and draws through EGL / OpenGL ES 2 (switch-mesa). The launcher runs on a thread with an
+8 MiB stack, the neighbours' workers are pinned to cores 1 and 2 while the game runs on core 0, and the CPU is raised
+to 1785 MHz while the app is open (restored on exit). Instead of a file dialog, the app finds your ROMs and patches
+on the SD card by their SHA-1.
 
-## Contributors ✨
+## Building (WSL or Linux with devkitPro)
 
-Thanks go to these wonderful people:
+```
+sudo dkp-pacman -S --needed switch-dev switch-cmake switch-pkg-config switch-mesa switch-libdrm_nouveau
+sudo apt install ninja-build git zip
+git clone https://github.com/toniisound/the-oracles-project-nx.git
+cd the-oracles-project-nx
+./build_switch.sh
+```
 
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<table>
-  <tr>
-    <td align="center" valign="top" width="14.28%"><a href="https://github.com/thibautbus"><img src="https://avatars.githubusercontent.com/thibautbus?s=100" width="100px;" alt="thibautbus"/><br /><sub><b>thibautbus</b></sub></a><br /><a href="https://github.com/thibautbus/top/commits?author=thibautbus" title="Code">💻</a> <a href="https://github.com/thibautbus/top/commits?author=thibautbus" title="Documentation">📖</a> <a href="https://github.com/thibautbus/top/commits?author=thibautbus" title="Maintenance">🚧</a></td>
-    <td align="center" valign="top" width="14.28%"><a href="https://github.com/Theeohn"><img src="https://avatars.githubusercontent.com/Theeohn?s=100" width="100px;" alt="Theeohn"/><br /><sub><b>Theeohn</b></sub></a><br /><a href="#userTesting-Theeohn" title="User Testing">📓</a></td>
-  </tr>
-</table>
+The result is `build-switch/the-oracles-project-nx.nro`, and `build-switch/the-oracles-project-nx.zip`, ready for a
+release: the SD card's `switch/the-oracles-project-nx/` folder with the `.nro`, the empty `roms/`, `patches/` and
+`mods/` folders and the licences. The first build downloads and compiles SDL 3.
 
-<!-- ALL-CONTRIBUTORS-LIST:END -->
+| Option | Effect |
+| --- | --- |
+| `-DORACLES_SWITCH_OVERCLOCK=OFF` | Keep the CPU at its normal clock (for emulators without the clock service) |
+| `-DORACLES_DEFAULT_CORE=sameboy` | SameBoy, the accurate core, by default instead of mGBA |
+
+Options go after the script, e.g. `./build_switch.sh -DORACLES_SWITCH_OVERCLOCK=OFF`.
+
+## Installing
+
+Unzip `the-oracles-project-nx.zip` at the root of the SD card, then copy your ROMs into `roms/`:
+
+```
+sdmc:/switch/the-oracles-project-nx/
+├── the-oracles-project-nx.nro
+├── roms/
+│   ├── Oracle of Ages (USA).gbc         required to play Ages
+│   ├── Oracle of Seasons (USA).gbc      required to play Seasons
+│   ├── Oracle of Ages (Europe).gbc      optional, for the languages
+│   └── Oracle of Seasons (Europe).gbc   optional, for the languages
+├── patches/                             optional, the fan games' .bps patches
+└── mods/                                optional, Lua mods, one folder each
+```
+
+### ROMs
+
+- Any file name works: files are recognised by their SHA-1. Plain `.gbc` only, not `.zip`.
+- The game always runs from the **US** ROM; a European ROM only provides the texts of the other languages.
+
+| File | SHA-1 |
+| --- | --- |
+| Oracle of Ages (US) | `880374fb978b18af4aa529e2e32f7ffb4d7dd2f4` |
+| Oracle of Seasons (US) | `ba1268290fb2b1b70505d2d7b5825fc8a4816a4b` |
+| Oracle of Ages (EU) | `9f2dff3c46406839f839a8d535353dfc1e3e8670` |
+| Oracle of Seasons (EU) | `360b9408e569ba826212eac1ebea1b09573cb48c` |
+| Gifts of Kinomi 1.1.2 patch | `bb0837fd2c62a8b3ea05da22ed6049ab57cfa1e2` |
+| Moonrise Regalia 1.0.6 patch | `fcef50de31ce3e57d3e23cd846c0749e42098e08` |
+| Temple of Seasons 1.073 patch | `0646e0a8fd6830198e453fdfeeea4a0a7c01cdf4` |
+
+At start the app assigns every file it recognises; **Choose ROM** on a game's page looks again. Saves and save states
+go beside the ROM, in `roms/`. `settings.txt`, the language packs and the logs (`the-oracles-project-nx.log`,
+`steps.log`) are in `sdmc:/switch/the-oracles-project-nx/`.
+
+### Languages
+
+With both ROMs of a game in `roms/`, open its page, then **Cartridge → Language**, and choose a language.
+
+## Default controls
+
+| Button | Action |
+| --- | --- |
+| D-pad / left stick | Move |
+| A / B | A / B (in menus: select / back) |
+| + / − | Start / Select |
+| Left stick click | Pause menu |
+| HOME | System menu |
+
+Everything can be remapped in Controls. See [docs/PLAYING.md](docs/PLAYING.md) for the options and the item hotkeys.
+
+## Performance
+
+- **Display → Quality** sets the view, the core and the neighbour workers together. Medium is the default on the
+  Switch; try **Low** if it runs slowly, or **High** docked.
+- **View**: Near (256×144) is the lightest, Far (480×270) the heaviest.
+- **Core**: Fast (mGBA) is much lighter than Accurate (SameBoy).
+- **Profile → Faithful** shows the original 160×144 picture and needs no neighbour workers at all.
+
+## Changes from The Oracles Project
+
+- `CMakeLists.txt`, `third_party/CMakeLists.txt`: the Switch build: SDL 3 from devkitPro's branch, mGBA by default, mGBA without `mmap`, no harness or tests.
+- `launcher/CMakeLists.txt`, `launcher/switch/icon.jpg`: the `.nro` with its icon and `.nacp`.
+- `launcher/main.c`: the launcher on an 8 MiB thread, the SD card's folders, the logs.
+- `launcher/switch_clock.c`: the CPU at 1785 MHz while running.
+- `launcher/home_games.c`, `launcher/file_dialog.c`: ROMs, European ROMs and patches found on the SD card by SHA-1.
+- `launcher/sdl_backend.c`: full-screen OpenGL window, the Switch's buttons by their letters, settings on the SD card.
+- `launcher/session.c`, `launcher/home_choices.c`: two neighbour workers by default.
+- `engine/ghost/ghost.c`: the workers on cores 1 and 2, with a 1 MiB stack.
+- `launcher/switch/sdl-switch-audio.patch`, `cmake/apply_patch_once.cmake`: a fix to the Switch SDL's audio driver, whose voice stopped for good when it ran out of buffers.
+- `launcher/settings.c`: the whole-pixel camera by default, as on Android.
+- `build_switch.sh`, `docs/SWITCH.md`: build script and notes.
+
+---
+
+This emulator is completely free and open-source. Optional donations to support the development are always welcome:
+
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/toniisound)
+[![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/toniisound)

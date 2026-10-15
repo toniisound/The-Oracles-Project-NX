@@ -564,7 +564,13 @@ static int attach(session *s, const OraclesSessionOptions *o, OraclesSessionResu
         /* The ghosts: the command line's, else the settings'; auto, two where four cores leave one to each besides the
          * game's own threads (the sound, the display). */
         const int ghosts = s->ghosts;
+#ifdef __SWITCH__
+        /* Not asked of SDL (sysconf, which libnx lacks): counted as four, so that Auto gives two neighbour workers, one
+         * on each of the cores 1 and 2 the live game on core 0 leaves free (engine/ghost/ghost.c). */
+        const int cores = 4;
+#else
         const int cores = SDL_GetNumLogicalCPUCores();
+#endif
         const int wanted = ghosts == 1 || ghosts == 2 ? ghosts : cores >= 4 ? 2 : 1;
         fprintf(stderr, "oracles: neighbour ghosts: %d (%s, %d processor cores)\n", oracles_enhanced_view_set_ghosts(s->view, (unsigned)wanted),
                 ghosts == 1 || ghosts == 2 ? "chosen" : "auto", cores);

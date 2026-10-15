@@ -30,7 +30,11 @@ void oracles_home_inspect_display(const oracles_settings *settings, OraclesHomeD
     display->scaling = settings->scaling_fill;
     display->margin = settings->screen_margin;
     display->margin_fixed = 0;
+#ifdef __SWITCH__
+    display->cores = 4;   /* as the session counts them for Auto (session.c) */
+#else
     display->cores = SDL_GetNumLogicalCPUCores();   /* as the session counts them for Auto */
+#endif
     display->fullscreen_only = oracles_sdl_fullscreen_only();
     /* Without a window (a capture drawn offscreen), a 1080p screen. */
     SDL_Rect usable;

@@ -78,6 +78,22 @@ if(ORACLES_BUILD_LAUNCHER)
         add_executable(oracles ${ORACLES_LAUNCHER_SOURCES})
         set_target_properties(oracles PROPERTIES OUTPUT_NAME the-oracles-project)
     endif()
+    if(NINTENDO_SWITCH)
+        # The Homebrew Menu's .nro: the ELF with its icon and its title, author and version (the .nacp).  Plain variables,
+        # not cached: a build folder configured before keeps no older title.
+        set(ORACLES_NX_TITLE "The Oracles Project NX")
+        set(ORACLES_NX_AUTHOR "Toniisound")
+        set(ORACLES_NX_VERSION "1.2.0")
+        # The CPU at 1785 MHz while the launcher runs (main.c); off for an emulator that lacks the clock service.
+        option(ORACLES_SWITCH_OVERCLOCK "Raise the Switch's CPU to 1785 MHz while running" ON)
+        if(ORACLES_SWITCH_OVERCLOCK)
+            target_sources(oracles PRIVATE switch_clock.c)
+            target_compile_definitions(oracles PRIVATE ORACLES_SWITCH_OVERCLOCK=1)
+        endif()
+        nx_generate_nacp(${CMAKE_CURRENT_BINARY_DIR}/the-oracles-project-nx.nacp NAME "${ORACLES_NX_TITLE}" AUTHOR "${ORACLES_NX_AUTHOR}" VERSION "${ORACLES_NX_VERSION}")
+        nx_create_nro(oracles NACP ${CMAKE_CURRENT_BINARY_DIR}/the-oracles-project-nx.nacp
+            ICON ${CMAKE_CURRENT_SOURCE_DIR}/switch/icon.jpg OUTPUT ${CMAKE_BINARY_DIR}/the-oracles-project-nx.nro)
+    endif()
     target_include_directories(oracles PRIVATE ${ORACLES_SESSION_DIR})
     if(ORACLES_DEFAULT_CORE STREQUAL "mgba")
         target_compile_definitions(oracles PRIVATE ORACLES_DEFAULT_CORE_KIND=ORACLES_CORE_MGBA)
