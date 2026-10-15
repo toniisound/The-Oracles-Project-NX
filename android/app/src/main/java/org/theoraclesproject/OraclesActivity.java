@@ -319,7 +319,7 @@ public class OraclesActivity extends SDLActivity {
             }
             return status + "\n" + new String(body.toByteArray(), StandardCharsets.UTF_8);
         } catch (Exception e) {
-            return "0\n" + e.getClass().getSimpleName() + (e.getMessage() != null ? ": " + e.getMessage() : "");
+            return "0\n" + e.getClass().getSimpleName();
         } finally {
             if (connection != null) connection.disconnect();
         }
