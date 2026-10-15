@@ -41,6 +41,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __SWITCH__
+#include <pthread.h>
+#include <sys/stat.h>
+#include <unistd.h>
+void oracles_switch_step(const char *what);
+#define LOAD_STEP(what) oracles_switch_step(what)
+#else
+#define LOAD_STEP(what) ((void)0)
+#endif
+
 #ifdef __ANDROID__
 #include <SDL3/SDL_system.h>
 #include <android/log.h>
@@ -276,9 +286,11 @@ static int parse(int argc, char **argv, OraclesSessionOptions *o, launcher_optio
 static void load_settings(oracles_settings *prefs, const OraclesSessionOptions *o)
 {
     memset(prefs, 0, sizeof *prefs);
+    LOAD_STEP("settings: defaults");
     oracles_settings_defaults(prefs);
     if (!o->no_window) {
         char dir[ORACLES_SETTINGS_PATH_LENGTH - 16];
+        LOAD_STEP("settings: folder");
         if (oracles_sdl_settings_dir(dir, sizeof dir)) snprintf(prefs->path, sizeof prefs->path, "%ssettings.txt", dir);
 #ifdef __ANDROID__
         /* The mods in the application's folder on the shared storage, beside the ROMs' copies, reachable over USB:
@@ -287,25 +299,116 @@ static void load_settings(oracles_settings *prefs, const OraclesSessionOptions *
         if (shared && prefs->path[0]) snprintf(prefs->mods_path, sizeof prefs->mods_path, "%s/mods", shared);
 #endif
     }
+    LOAD_STEP("settings: reading settings.txt");
     oracles_settings_load(prefs);
+#ifdef __SWITCH__
+    /* No HTTP client here: the check would only say so. */
+    if (prefs->first_run) prefs->update_check = 0;
+#endif
+    LOAD_STEP("settings: menu button");
     oracles_home_resolve_menu_pad(prefs);
     /* A first opening takes the device's quality: what weighs on it set for it, Display's Quality to change. */
     if (prefs->first_run) {
-        const OraclesQuality quality = oracles_settings_default_quality(oracles_sdl_fullscreen_only(), SDL_GetNumLogicalCPUCores(), SDL_GetSystemRAM());
+        LOAD_STEP("settings: first opening, quality");
+#ifdef __SWITCH__
+        /* The Switch: its three cores for applications and 4 GB, not asked of SDL (sysconf, which libnx lacks). */
+        const int threads = 3, ram_mb = 4096;
+#else
+        const int threads = SDL_GetNumLogicalCPUCores(), ram_mb = SDL_GetSystemRAM();
+#endif
+        const OraclesQuality quality = oracles_settings_default_quality(oracles_sdl_fullscreen_only(), threads, ram_mb);
         oracles_settings_apply_quality(prefs, quality);
         fprintf(stderr, "oracles: a first opening: the %s quality, for %d processor threads and %d MB\n", oracles_settings_quality_names[quality],
-                SDL_GetNumLogicalCPUCores(), SDL_GetSystemRAM());
+                threads, ram_mb);
     }
 }
 
+#ifdef __SWITCH__
+/* A line in steps.log, the file opened, written and closed each time: an emulator, or the console, keeps what an open
+ * file was given until it is closed, and a start that crashes would leave the log empty.  Also on the standard error. */
+void oracles_switch_step(const char *what)
+{
+    FILE *f = fopen(ORACLES_SWITCH_DIR "/steps.log", "a");
+    if (f) { fprintf(f, "%s\n", what); fclose(f); }
+    fprintf(stderr, "oracles: switch: %s\n", what);
+    fflush(stderr);
+    fsync(fileno(stderr));
+}
+#define SWITCH_STEP(what) oracles_switch_step(what)
+static int launcher_main(int argc, char **argv);
+
+/* The launcher runs on a thread of its own with a large stack: the home screen, a game's start and the session nest
+ * frames of tens of kilobytes, more than the stack libnx gives an .nro's main thread. */
+#define SWITCH_STACK (8u * 1024u * 1024u)
+typedef struct switch_start { int argc; char **argv; int status; } switch_start;
+
+static void *switch_thread(void *opaque)
+{
+    switch_start *start = opaque;
+    start->status = launcher_main(start->argc, start->argv);
+    return NULL;
+}
+
+#ifdef ORACLES_SWITCH_OVERCLOCK
+void oracles_switch_overclock(void);    /* switch_clock.c */
+void oracles_switch_clock_back(void);
+#define switch_overclock oracles_switch_overclock
+#define switch_clock_back oracles_switch_clock_back
+#endif
+
 int main(int argc, char **argv)
 {
+    mkdir("sdmc:/switch", 0777);
+    mkdir(ORACLES_SWITCH_DIR, 0777);
+    remove(ORACLES_SWITCH_DIR "/steps.log");
+    if (freopen(ORACLES_SWITCH_DIR "/the-oracles-project-nx.log", "w", stderr)) setvbuf(stderr, NULL, _IOLBF, 0);
+    SWITCH_STEP("started");
+#ifdef ORACLES_SWITCH_OVERCLOCK
+    switch_overclock();
+#endif
+    switch_start start = { argc, argv, 1 };
+    pthread_attr_t attr;
+    pthread_t thread;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, SWITCH_STACK);
+    if (pthread_create(&thread, &attr, switch_thread, &start) != 0) {
+        SWITCH_STEP("no thread for the launcher: on the main thread");
+        start.status = launcher_main(argc, argv);
+    } else {
+        pthread_join(thread, NULL);
+    }
+    pthread_attr_destroy(&attr);
+#ifdef ORACLES_SWITCH_OVERCLOCK
+    switch_clock_back();
+#endif
+    SWITCH_STEP("finished");
+    fflush(stderr);
+    return start.status;
+}
+
+static int launcher_main(int argc, char **argv)
+{
+#else
+#define SWITCH_STEP(what) ((void)0)
+int main(int argc, char **argv)
+{
+#endif
 #if defined(__linux__) && !defined(__ANDROID__)
     /* X11 first on a Wayland desktop that has XWayland, as SDL 2 had it: SDL 3 would take Wayland where the compositor
      * has fifo-v1, and there a window that does not ask for the display's pixel density is drawn at one pixel a point
      * and stretched by the compositor, text and pixels blurred at 125 % or 150 %.  Elsewhere SDL chooses, a console
      * without X or Wayland (KMSDRM) included; SDL_VIDEO_DRIVER in the environment still chooses. */
     if (getenv("WAYLAND_DISPLAY") && getenv("DISPLAY")) SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "x11,wayland");
+#endif
+#ifdef __SWITCH__
+    /* The folders the player fills (ROMs, patches, mods), and the standard error kept as a file beside them: the only
+     * place a report can be read on the console. */
+    SWITCH_STEP("launcher thread");
+    mkdir(ORACLES_SWITCH_ROMS, 0777);
+    mkdir(ORACLES_SWITCH_PATCHES, 0777);
+    mkdir(ORACLES_SWITCH_DIR "/mods", 0777);
+    /* EGL's OpenGL ES 2, the renderer the Switch's SDL draws with. */
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengles2");
 #endif
 #ifdef __ANDROID__
     log_stderr();
@@ -322,13 +425,19 @@ int main(int argc, char **argv)
     /* The settings are allocated: they hold a path per game. */
     oracles_settings *prefs = malloc(sizeof *prefs);
     if (!prefs) { fprintf(stderr, "oracles: out of memory\n"); return 1; }
+    SWITCH_STEP("loading settings");
     load_settings(prefs, &options);
+    SWITCH_STEP("settings loaded");
     static OraclesHomeGames games;   /* with a refused path per game: kept off the stack */
     games.settings = prefs;
     games.options = &options;
     games.window_from_command_line = launcher.window_given;
     OraclesHomeHost host;
     oracles_home_games_host(&games, &host);
+#ifdef __SWITCH__
+    if (!options.rom_path) oracles_home_games_find_files(&games);
+#endif
+    SWITCH_STEP("files looked for");
     int status;
     if (launcher.screenshot) {
         /* A capture reads the settings (the games' ROMs) and never writes them, and asks for no update but the answer
@@ -353,7 +462,9 @@ int main(int argc, char **argv)
         /* Asked once a run, in the background: the home screen never waits for it. */
         if (prefs->update_check) oracles_update_check_start(launcher.update_source ? launcher.update_source : oracles_update_default_url(), ORACLES_PRODUCT_VERSION);
         else fprintf(stderr, "oracles: update check: off (update_check=off)\n");
+        SWITCH_STEP("home screen");
         status = oracles_home_run(&host, &prefs->launcher_width, &prefs->launcher_height);
+        SWITCH_STEP("home screen closed");
         oracles_settings_store(prefs);
     }
     free(prefs);

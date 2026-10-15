@@ -547,6 +547,13 @@ int oracles_sdl_settings_dir(char *out, size_t capacity)
         snprintf(out, capacity, "%s%s", forced, separated ? "" : "/");
         return 1;
     }
+#ifdef __SWITCH__
+    /* Beside the application on the SD card, where the player finds it. */
+    const char *dir = "sdmc:/switch/the-oracles-project-nx/";
+    if (strlen(dir) + 1 > capacity) return 0;
+    snprintf(out, capacity, "%s", dir);
+    return 1;
+#endif
     char *path = SDL_GetPrefPath("", "the-oracles-project");
     if (!path) return 0;
     const int ok = strlen(path) < capacity;

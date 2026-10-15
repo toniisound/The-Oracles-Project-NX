@@ -1,0 +1,34 @@
+diff --git a/src/audio/switch/SDL_switchaudio.c b/src/audio/switch/SDL_switchaudio.c
+index 83c0d7c..43fd4b6 100644
+--- a/src/audio/switch/SDL_switchaudio.c
++++ b/src/audio/switch/SDL_switchaudio.c
+@@ -142,14 +142,18 @@ static bool SWITCHAUDIO_PlayDevice(SDL_AudioDevice *device, const Uint8 *buffer,
+         memcpy(ptr, device->hidden->buffer_tmp, device->buffer_size);
+         armDCacheFlush(ptr, device->buffer_size);
+         audrvVoiceAddWaveBuf(&device->hidden->driver, 0, &device->hidden->buffer[current]);
+-    } else if (!audrvVoiceIsPlaying(&device->hidden->driver, 0)) {
++    }
++    /* A voice that ran out of buffers stops: start it again, or it stays silent from then on. */
++    if (!audrvVoiceIsPlaying(&device->hidden->driver, 0)) {
+         audrvVoiceStart(&device->hidden->driver, 0);
+     }
+ 
+     audrvUpdate(&device->hidden->driver);
+ 
+     if (current >= 0) {
+-        while (device->hidden->buffer[current].state != AudioDriverWaveBufState_Playing) {
++        /* Until the buffer is taken: Playing, or already Done when it was short. */
++        while (device->hidden->buffer[current].state == AudioDriverWaveBufState_Waiting ||
++               device->hidden->buffer[current].state == AudioDriverWaveBufState_Queued) {
+             audrvUpdate(&device->hidden->driver);
+             audrenWaitFrame();
+         }
+@@ -161,7 +165,7 @@ static bool SWITCHAUDIO_PlayDevice(SDL_AudioDevice *device, const Uint8 *buffer,
+                 break;
+             }
+         }
+-        while (device->hidden->buffer[current].state == AudioDriverWaveBufState_Playing) {
++        while (current >= 0 && device->hidden->buffer[current].state == AudioDriverWaveBufState_Playing) {
+             audrvUpdate(&device->hidden->driver);
+             audrenWaitFrame();
+         }

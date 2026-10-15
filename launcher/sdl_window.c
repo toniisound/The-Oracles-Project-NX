@@ -9,6 +9,9 @@ uint64_t oracles_sdl_window_flags(void)
      * in points, the renderer has the pixels.  Windows and X11 count a window in pixels already. */
 #ifdef __APPLE__
     return SDL_WINDOW_HIGH_PIXEL_DENSITY;
+#elif defined(__SWITCH__)
+    /* The Switch's SDL draws only through EGL, which it loads for an OpenGL window alone. */
+    return SDL_WINDOW_OPENGL;
 #else
     return 0;
 #endif
@@ -16,7 +19,7 @@ uint64_t oracles_sdl_window_flags(void)
 
 int oracles_sdl_fullscreen_only(void)
 {
-#ifdef __ANDROID__
+#if defined(__ANDROID__) || defined(__SWITCH__)
     return 1;
 #else
     return 0;
@@ -65,18 +68,33 @@ float oracles_sdl_point_scale(struct SDL_Window *window)
 #endif
 }
 
+#ifdef __SWITCH__
+void oracles_switch_step(const char *what);   /* main.c */
+#endif
+
 struct SDL_Window *oracles_sdl_create_window(int width, int height, uint64_t flags)
 {
     const SDL_PropertiesID properties = SDL_CreateProperties();
     SDL_SetStringProperty(properties, SDL_PROP_WINDOW_CREATE_TITLE_STRING, "The Oracles Project");
     SDL_SetNumberProperty(properties, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
     SDL_SetNumberProperty(properties, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
+#ifdef __SWITCH__
+    /* One window, the whole screen: 1280x720 handheld, the display's mode docked. */
+    const SDL_DisplayMode *mode = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay());
+    width = mode ? mode->w : 1280;
+    height = mode ? mode->h : 720;
+    flags = (flags & ~(uint64_t)SDL_WINDOW_RESIZABLE) | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_OPENGL;
+#endif
     SDL_SetNumberProperty(properties, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, width);
     SDL_SetNumberProperty(properties, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
     SDL_SetNumberProperty(properties, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, (Sint64)flags);
     SDL_Window *window = SDL_CreateWindowWithProperties(properties);
     SDL_DestroyProperties(properties);
-#if !defined(__APPLE__) && !defined(__ANDROID__)
+#ifdef __SWITCH__
+    oracles_switch_step(window ? "SDL window created" : "SDL window failed:");
+    if (!window) oracles_switch_step(SDL_GetError());
+#endif
+#if !defined(__APPLE__) && !defined(__ANDROID__) && !defined(__SWITCH__)
     /* The application's icon on the window and in the taskbar; macOS takes a bundle's, Android the manifest's. */
     SDL_Surface *icon = window ? SDL_CreateSurfaceFrom(ORACLES_WINDOW_ICON_SIZE, ORACLES_WINDOW_ICON_SIZE, SDL_PIXELFORMAT_RGBA32,
                                                        (void *)oracles_window_icon, ORACLES_WINDOW_ICON_SIZE * 4) : NULL;
@@ -91,6 +109,10 @@ struct SDL_Window *oracles_sdl_create_window(int width, int height, uint64_t fla
 struct SDL_Renderer *oracles_sdl_create_renderer(struct SDL_Window *window, int vsync)
 {
     SDL_Renderer *renderer = SDL_CreateRenderer(window, NULL);
+#ifdef __SWITCH__
+    oracles_switch_step(renderer ? "SDL renderer created" : "SDL renderer failed:");
+    if (!renderer) oracles_switch_step(SDL_GetError());
+#endif
     if (!renderer) renderer = SDL_CreateRenderer(window, SDL_SOFTWARE_RENDERER);
     if (renderer && vsync) SDL_SetRenderVSync(renderer, 1);
     return renderer;
@@ -152,6 +174,17 @@ int oracles_sdl_pad_button(const SDL_Event *event)
     SDL_Gamepad *gamepad = SDL_GetGamepadFromID(event->gbutton.which);
     const SDL_GamepadButtonLabel label = gamepad ? SDL_GetGamepadButtonLabel(gamepad, button)
                                                  : SDL_GetGamepadButtonLabelForType(SDL_GetGamepadTypeForID(event->gbutton.which), button);
+#ifdef __SWITCH__
+    /* The Switch's own controllers: SDL puts B south and A east, as the buttons sit; a letter is that letter's. */
+    (void)label;
+    switch (button) {
+        case SDL_GAMEPAD_BUTTON_EAST: return SDL_GAMEPAD_BUTTON_SOUTH;    /* A */
+        case SDL_GAMEPAD_BUTTON_SOUTH: return SDL_GAMEPAD_BUTTON_EAST;    /* B */
+        case SDL_GAMEPAD_BUTTON_NORTH: return SDL_GAMEPAD_BUTTON_WEST;    /* X */
+        case SDL_GAMEPAD_BUTTON_WEST: return SDL_GAMEPAD_BUTTON_NORTH;    /* Y */
+        default: return button;
+    }
+#endif
     switch (label) {
         case SDL_GAMEPAD_BUTTON_LABEL_A: return SDL_GAMEPAD_BUTTON_SOUTH;
         case SDL_GAMEPAD_BUTTON_LABEL_B: return SDL_GAMEPAD_BUTTON_EAST;

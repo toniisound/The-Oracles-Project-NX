@@ -45,7 +45,9 @@ static void open_folder(void *opaque, int game, char *message, size_t capacity)
     char save[ORACLES_SETTINGS_PATH_LENGTH], folder[ORACLES_SETTINGS_PATH_LENGTH];
     oracles_home_games_save_path(games, game, save, sizeof save);
     folder_of(save, folder, sizeof folder);
-#ifdef __ANDROID__
+#ifdef __SWITCH__
+    snprintf(message, capacity, "Saves are in %s", folder[0] ? folder : ORACLES_SWITCH_ROMS);
+#elif defined(__ANDROID__)
     /* Android opens no file manager on a folder: the toast says where the saves are, from the shared storage's root, as
      * a computer sees it over USB, as the page shows it. */
     char shown[ORACLES_SETTINGS_PATH_LENGTH];
@@ -90,7 +92,12 @@ static void save_chosen(void *opaque, int game, int kind, int result, const char
     OraclesHomeGames *games = opaque;
     if (result == ORACLES_DIALOG_CANCELLED) return;
     if (result != ORACLES_DIALOG_CHOSEN) {
+#ifdef __SWITCH__
+        /* No dialog on the Switch: a save is copied in or out by hand, beside the ROM in roms/. */
+        status(nav, ORACLES_SAVE_FLOW_REFUSED, "No file dialog on the Switch: copy the .sav beside the ROM in roms/.", NULL);
+#else
         status(nav, ORACLES_SAVE_FLOW_REFUSED, kind == ORACLES_DIALOG_EXPORT ? "No document picker on this system." : "No file dialog on this system.", NULL);
+#endif
         return;
     }
     if (kind == ORACLES_DIALOG_EXPORT) { exported(games, game, path, nav); return; }

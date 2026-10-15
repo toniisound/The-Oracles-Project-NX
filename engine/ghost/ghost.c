@@ -657,9 +657,26 @@ int oracles_ghost_run(OraclesGhost *g, const uint8_t *state, size_t size, Oracle
 
 /* ---- worker thread ------------------------------------------------------------- */
 
+#ifdef __SWITCH__
+/* libnx's svcSetThreadCoreMask (switch/kernel/svc.h), declared here: <switch.h> names Thread and Mutex as mGBA does. */
+extern uint32_t svcSetThreadCoreMask(uint32_t handle, int32_t core_id, uint32_t affinity_mask);
+#define SWITCH_CURRENT_THREAD 0xFFFF8000u
+/* libnx starts every thread on the application's default core, 0, where the live game runs too: the neighbours'
+ * workers would then wait for it rather than run beside it.  Each goes to a core of its own, 1 then 2. */
+static void switch_spread_worker(void)
+{
+    static int next;
+    const int core = 1 + (__atomic_fetch_add(&next, 1, __ATOMIC_RELAXED) % 2);
+    svcSetThreadCoreMask(SWITCH_CURRENT_THREAD, core, 1u << core);
+}
+#endif
+
 static void *worker(void *arg)
 {
     OraclesGhost *g = arg;
+#ifdef __SWITCH__
+    switch_spread_worker();
+#endif
     pthread_mutex_lock(&g->mutex);
     for (;;) {
         while (!g->quit && !g->job_pending) pthread_cond_wait(&g->cond, &g->mutex);
@@ -715,7 +732,17 @@ int oracles_ghost_request_ex(OraclesGhost *g, const uint8_t *state, size_t size,
     g->job_pending = 1;
     g->job_done = 0;
     if (!g->thread_started) {
-        if (pthread_create(&g->thread, NULL, worker, g) != 0) { g->job_pending = 0; pthread_mutex_unlock(&g->mutex); return -1; }
+#ifdef __SWITCH__
+        /* libnx gives a thread a small stack unless asked: the core's frames want more. */
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setstacksize(&attr, 1024 * 1024);
+        const int created = pthread_create(&g->thread, &attr, worker, g);
+        pthread_attr_destroy(&attr);
+#else
+        const int created = pthread_create(&g->thread, NULL, worker, g);
+#endif
+        if (created != 0) { g->job_pending = 0; pthread_mutex_unlock(&g->mutex); return -1; }
         g->thread_started = 1;
     }
     pthread_cond_broadcast(&g->cond);

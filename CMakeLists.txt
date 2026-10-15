@@ -34,7 +34,7 @@ option(ORACLES_WARNINGS_AS_ERRORS "Treat warnings in the engine's own code as er
 option(ORACLES_BUILD_LAUNCHER "Build the SDL 3 launcher" ON)
 # The core the launcher's games run on until the player chooses one in Display: sameboy (accurate) on the desktops, mgba
 # (lighter) on Android, whose devices go down to small handhelds.
-if(ANDROID)
+if(ANDROID OR NINTENDO_SWITCH)
     set(ORACLES_DEFAULT_CORE_FOR_PLATFORM mgba)
 else()
     set(ORACLES_DEFAULT_CORE_FOR_PLATFORM sameboy)
@@ -74,11 +74,28 @@ if(ORACLES_BUILD_LAUNCHER)
     string(JSON ORACLES_SDL3_VERSION GET ${ORACLES_SDL3_JSON} version)
     string(JSON ORACLES_SDL3_URL GET ${ORACLES_SDL3_JSON} archive_url)
     string(JSON ORACLES_SDL3_SHA256 GET ${ORACLES_SDL3_JSON} archive_sha256)
-    if(NOT ORACLES_SDL3_FROM_SOURCE)
+    if(NOT ORACLES_SDL3_FROM_SOURCE AND NOT NINTENDO_SWITCH)
         find_package(SDL3 ${ORACLES_SDL3_VERSION} QUIET CONFIG)
     endif()
     set(ORACLES_SDL3_BUILT OFF)
-    if(NOT TARGET SDL3::SDL3)
+    if(NINTENDO_SWITCH)
+        # The Switch (libnx homebrew): SDL 3 from devkitPro's Switch branch, linked statically into the .nro; it draws
+        # through EGL and OpenGL ES 2 (switch-mesa).
+        include(FetchContent)
+        # With one fix of its audio driver (launcher/switch/sdl-switch-audio.patch): a voice that ran out of buffers,
+        # when the game held the CPU a moment, stopped for good, and the sound with it.
+        FetchContent_Declare(SDL3 GIT_REPOSITORY https://github.com/devkitPro/SDL.git
+            GIT_TAG c329016c0e338ab4397ad930f83330c9fe058348   # branch switch-sdl-3.4
+            PATCH_COMMAND ${CMAKE_COMMAND} -DPATCH=${CMAKE_CURRENT_SOURCE_DIR}/launcher/switch/sdl-switch-audio.patch
+                          -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/apply_patch_once.cmake)
+        set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+        set(SDL_STATIC ON CACHE BOOL "" FORCE)
+        set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+        set(SDL_TESTS OFF CACHE BOOL "" FORCE)
+        set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
+        FetchContent_MakeAvailable(SDL3)
+        set(ORACLES_SDL3_BUILT ON)
+    elseif(NOT TARGET SDL3::SDL3)
         message(STATUS "SDL ${ORACLES_SDL3_VERSION} is built from ${ORACLES_SDL3_URL}")
         include(FetchContent)
         FetchContent_Declare(SDL3 URL ${ORACLES_SDL3_URL} URL_HASH SHA256=${ORACLES_SDL3_SHA256})
@@ -90,7 +107,11 @@ if(ORACLES_BUILD_LAUNCHER)
         set_target_properties(SDL3-shared PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
         set(ORACLES_SDL3_BUILT ON)
     endif()
-    set(ORACLES_SDL_TARGET SDL3::SDL3)
+    if(NINTENDO_SWITCH)
+        set(ORACLES_SDL_TARGET SDL3::SDL3-static)
+    else()
+        set(ORACLES_SDL_TARGET SDL3::SDL3)
+    endif()
     if(NOT ORACLES_SDL3_BUILT)
         message(STATUS "SDL ${SDL3_VERSION} found in ${SDL3_DIR}")
     endif()
@@ -147,9 +168,13 @@ set(ORACLES_HOST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/engine/host)
 
 add_subdirectory(third_party)
 add_subdirectory(engine)
-add_subdirectory(harness)
+if(NOT NINTENDO_SWITCH)   # the route harness and the tests are the desktops' tools
+    add_subdirectory(harness)
+endif()
 add_subdirectory(launcher)
 
 # ---- tests without ROM --------------------------------------------------------
-include(CTest)
-add_subdirectory(tests)
+if(NOT NINTENDO_SWITCH)
+    include(CTest)
+    add_subdirectory(tests)
+endif()
