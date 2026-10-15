@@ -420,6 +420,102 @@ static const OraclesHomeFanGame *fan_of_patch(const OraclesHomeGames *games, con
     return NULL;
 }
 
+#ifdef __SWITCH__
+/* The Switch has no file dialog: the player copies ROMs into ORACLES_SWITCH_ROMS and patches into
+ * ORACLES_SWITCH_PATCHES, and Choose looks there for the file the page wants, recognised by its SHA-1. */
+#include <dirent.h>
+#include <strings.h>
+
+void oracles_switch_step(const char *what);   /* main.c */
+
+/* The first file of `folder` (by name) that `wanted` accepts, into `path`.  1 when there is one. */
+static int switch_find(OraclesHomeGames *games, const char *folder, int (*wanted)(OraclesHomeGames *, int, const char *), int which,
+                       char *path, size_t capacity)
+{
+    DIR *d = opendir(folder);
+    if (!d) return 0;
+    char best[ORACLES_SETTINGS_PATH_LENGTH] = "";
+    struct dirent *e;
+    while ((e = readdir(d))) {
+        if (e->d_name[0] == '.' || strstr(e->d_name, ".partial")) continue;
+        const char *dot = strrchr(e->d_name, '.');
+        if (dot && (!strcasecmp(dot, ".sav") || !strcasecmp(dot, ".state") || !strcasecmp(dot, ".txt"))) continue;
+        char candidate[ORACLES_SETTINGS_PATH_LENGTH];
+        snprintf(candidate, sizeof candidate, "%s/%s", folder, e->d_name);
+        oracles_switch_step(candidate);
+        if ((!best[0] || strcmp(candidate, best) < 0) && wanted(games, which, candidate)) snprintf(best, sizeof best, "%s", candidate);
+    }
+    closedir(d);
+    if (!best[0]) return 0;
+    snprintf(path, capacity, "%s", best);
+    return 1;
+}
+
+/* The game's original US ROM. */
+static int wanted_rom(OraclesHomeGames *games, int g, const char *path)
+{
+    (void)games;
+    OraclesRomInfo info;
+    char error[ORACLES_HOME_TEXT_LENGTH];
+    return identify(path, &info, error, sizeof error) && info.game == game_of((OraclesSettingsGame)g) && oracles_rom_is_original(&info);
+}
+
+/* The Oracle's European ROM. */
+static int wanted_eu(OraclesHomeGames *games, int g, const char *path)
+{
+    (void)games;
+    return european_game(path) == game_of((OraclesSettingsGame)g);
+}
+
+/* The fan game's patch, for its Oracle's ROM already chosen. */
+static int wanted_patch(OraclesHomeGames *games, int f, const char *path)
+{
+    const OraclesHomeFanGame *fan = fan_of_patch(games, path);
+    return fan && fan_index(fan) == (unsigned)f;
+}
+
+static void switch_choose(OraclesHomeGames *games, OraclesDialogKind kind, int game)
+{
+    char path[ORACLES_SETTINGS_PATH_LENGTH];
+    int found;
+    if (kind == ORACLES_DIALOG_PATCH) {
+        const OraclesHomeFanGame *fan = oracles_home_fan_game(game);
+        found = fan && switch_find(games, ORACLES_SWITCH_PATCHES, wanted_patch, (int)fan_index(fan), path, sizeof path);
+    } else {
+        found = switch_find(games, ORACLES_SWITCH_ROMS, kind == ORACLES_DIALOG_EU_ROM ? wanted_eu : wanted_rom, (int)rom_setting(game), path, sizeof path);
+    }
+    oracles_dialog_post(kind, game, found ? ORACLES_DIALOG_CHOSEN : ORACLES_DIALOG_UNAVAILABLE, found ? path : "");
+}
+
+void oracles_home_games_find_files(OraclesHomeGames *games)
+{
+    oracles_switch_step("looking for ROMs and patches");
+    oracles_settings *s = games->settings;
+    int changed = 0;
+    char path[ORACLES_SETTINGS_PATH_LENGTH];
+    for (int g = 0; g < ORACLES_SETTINGS_GAMES; g++) {
+        if (!s->rom[g][0] && switch_find(games, ORACLES_SWITCH_ROMS, wanted_rom, g, path, sizeof path)) {
+            snprintf(s->rom[g], sizeof s->rom[g], "%s", path);
+            fprintf(stderr, "oracles: %s ROM found: %s\n", oracles_game_name(game_of((OraclesSettingsGame)g)), path);
+            changed = 1;
+        }
+        if (!s->eu_rom[g][0] && switch_find(games, ORACLES_SWITCH_ROMS, wanted_eu, g, path, sizeof path)) {
+            snprintf(s->eu_rom[g], sizeof s->eu_rom[g], "%s", path);
+            fprintf(stderr, "oracles: %s European ROM found: %s\n", oracles_game_name(game_of((OraclesSettingsGame)g)), path);
+            changed = 1;
+        }
+    }
+    for (unsigned f = 0; f < ORACLES_HOME_FAN_GAMES; f++) {
+        if (!s->patch[f][0] && switch_find(games, ORACLES_SWITCH_PATCHES, wanted_patch, (int)f, path, sizeof path)) {
+            snprintf(s->patch[f], sizeof s->patch[f], "%s", path);
+            fprintf(stderr, "oracles: %s patch found: %s\n", fan_title(&oracles_home_fan_games[f]), path);
+            changed = 1;
+        }
+    }
+    if (changed) oracles_settings_store(s);
+}
+#endif
+
 /* Opens the system's dialog of `kind` in the folder of `current`; the answer comes to file_chosen. */
 static void choose(struct SDL_Window *window, OraclesDialogKind kind, const char *current, int game)
 {
@@ -430,12 +526,22 @@ static void choose(struct SDL_Window *window, OraclesDialogKind kind, const char
 
 static void choose_rom(void *opaque, int game, struct SDL_Window *window)
 {
+#ifdef __SWITCH__
+    (void)window;
+    switch_choose(opaque, ORACLES_DIALOG_ROM, game);
+    return;
+#endif
     const OraclesHomeGames *games = opaque;
     choose(window, ORACLES_DIALOG_ROM, games->settings->rom[rom_setting(game)], game);
 }
 
 static void choose_patch(void *opaque, int game, struct SDL_Window *window)
 {
+#ifdef __SWITCH__
+    (void)window;
+    switch_choose(opaque, ORACLES_DIALOG_PATCH, game);
+    return;
+#endif
     const OraclesHomeGames *games = opaque;
     const OraclesHomeFanGame *fan = oracles_home_fan_game(game);
     if (!fan) return;
@@ -447,6 +553,11 @@ static void choose_patch(void *opaque, int game, struct SDL_Window *window)
 
 static void choose_eu_rom(void *opaque, int game, struct SDL_Window *window)
 {
+#ifdef __SWITCH__
+    (void)window;
+    switch_choose(opaque, ORACLES_DIALOG_EU_ROM, game);
+    return;
+#endif
     const OraclesHomeGames *games = opaque;
     if (oracles_home_fan_game(game)) return;
     /* The dialog opens where the European ROM is, or else where the game's ROM is. */
@@ -461,7 +572,11 @@ static void file_chosen(void *opaque, int game, int kind, int result, const char
     const char *what = kind == ORACLES_DIALOG_PATCH ? "patch" : kind == ORACLES_DIALOG_EU_ROM ? "European ROM" : "ROM";
     switch ((OraclesDialogResult)result) {
         case ORACLES_DIALOG_UNAVAILABLE:
+#ifdef __SWITCH__
+            snprintf(message, capacity, "No %s for this game in %s", what, kind == ORACLES_DIALOG_PATCH ? ORACLES_SWITCH_PATCHES : ORACLES_SWITCH_ROMS);
+#else
             snprintf(message, capacity, "No file dialog on this system: drop the %s on this window", what);
+#endif
             return;
         case ORACLES_DIALOG_FAILED:
             snprintf(message, capacity, "The %s cannot be copied into the application's folder", what);
@@ -488,7 +603,10 @@ static void open_folder(void *opaque, int game, char *message, size_t capacity)
     /* The folder of the save: beside the ROM, or a fan game's patch. */
     const OraclesHomeFanGame *fan = oracles_home_fan_game(game);
     split_path(fan ? games->settings->patch[fan_index(fan)] : games->settings->rom[rom_setting(game)], file, sizeof file, folder, sizeof folder);
-#ifdef __ANDROID__
+#ifdef __SWITCH__
+    (void)error;
+    snprintf(message, capacity, "Saves are in %s", folder[0] ? folder : ORACLES_SWITCH_ROMS);
+#elif defined(__ANDROID__)
     /* Android opens no file manager on a folder: the toast says where the saves are, from the shared storage's root, as
      * a computer sees it over USB, as the page shows it. */
     (void)error;
@@ -508,7 +626,10 @@ static void open_mods(void *opaque, char *message, size_t capacity)
     oracles_settings_mods_folder(games->settings, folder, sizeof folder);
     if (!folder[0]) { snprintf(message, capacity, "No settings folder: the launcher has no mods folder"); return; }
     if (!SDL_CreateDirectory(folder)) { snprintf(message, capacity, "The mods folder cannot be made: %s", SDL_GetError()); return; }
-#ifdef __ANDROID__
+#ifdef __SWITCH__
+    (void)error;
+    snprintf(message, capacity, "Mods go in %s", folder);
+#elif defined(__ANDROID__)
     (void)error;
     char shown[ORACLES_SETTINGS_PATH_LENGTH];
     oracles_page_folder(1, folder, shown, sizeof shown);

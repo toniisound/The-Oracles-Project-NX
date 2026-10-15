@@ -464,9 +464,25 @@ static int open_window(home_app *app)
     return app->draw != NULL;
 }
 
+#ifdef __SWITCH__
+void oracles_switch_step(const char *what);   /* main.c */
+#endif
+
 int oracles_home_run(const OraclesHomeHost *host, int *width, int *height)
 {
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) { fprintf(stderr, "oracles: %s\n", SDL_GetError()); return 1; }
+#ifdef __SWITCH__
+    oracles_switch_step("SDL starting");
+#endif
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
+#ifdef __SWITCH__
+        oracles_switch_step(SDL_GetError());
+#endif
+        fprintf(stderr, "oracles: %s\n", SDL_GetError());
+        return 1;
+    }
+#ifdef __SWITCH__
+    oracles_switch_step("SDL started");
+#endif
     oracles_update_check_events(1);
     home_app app;
     memset(&app, 0, sizeof app);
@@ -475,10 +491,21 @@ int oracles_home_run(const OraclesHomeHost *host, int *width, int *height)
     app.width = *width;
     app.height = *height;
     int status = 0;
+#ifdef __SWITCH__
+    oracles_switch_step("opening the window");
+#endif
     if (!open_window(&app)) {
+#ifdef __SWITCH__
+        oracles_switch_step("the window cannot open:");
+        oracles_switch_step(SDL_GetError());
+#endif
         fprintf(stderr, "oracles: the launcher's window cannot open: %s\n", SDL_GetError());
         status = 1;
     } else {
+#ifdef __SWITCH__
+        oracles_switch_step(SDL_GetRendererName(app.renderer));
+        oracles_switch_step("window open");
+#endif
         SDL_SetEventEnabled(SDL_EVENT_DROP_FILE, true);
         oracles_home_init(&app.nav);
         refresh(&app);   /* the screen margin's edges read with Display's */

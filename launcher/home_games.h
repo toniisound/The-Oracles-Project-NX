@@ -59,6 +59,15 @@ typedef struct OraclesHomeGames {
 /* The host of the home screen for these games. */
 void oracles_home_games_host(OraclesHomeGames *games, OraclesHomeHost *host);
 
+#ifdef __SWITCH__
+/* Where the Switch keeps what the player copies to the SD card: ROMs (US and European) and the fan games' patches. */
+#define ORACLES_SWITCH_DIR "sdmc:/switch/the-oracles-project-nx"
+#define ORACLES_SWITCH_ROMS ORACLES_SWITCH_DIR "/roms"
+#define ORACLES_SWITCH_PATCHES ORACLES_SWITCH_DIR "/patches"
+/* Each ROM, European ROM and patch settings.txt does not name yet, taken from those folders when one is there. */
+void oracles_home_games_find_files(OraclesHomeGames *games);
+#endif
+
 /* "21 Sep 2026": a date as the home screen shows it, in English whatever the locale. */
 void oracles_home_format_date(time_t when, char *out, size_t capacity);
 
